@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boardroom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.5"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], serif: ['"Instrument Serif"', 'Georgia', 'serif'] } } }
+  };
+</script>
+<style>
+  :root {
+    --bg: #08090d;
+    --panel: #0f1118;
+    --panel-2: #141722;
+    --line: rgba(255, 255, 255, 0.07);
+    --line-strong: rgba(255, 255, 255, 0.12);
+    --text: #e7e9ee;
+    --muted: #8b90a0;
+    --gold: #d8b06a;
+    --gold-soft: rgba(216, 176, 106, 0.12);
+  }
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(216, 176, 106, 0.07), transparent 60%),
+      radial-gradient(700px 400px at -10% 110%, rgba(99, 102, 241, 0.05), transparent 60%),
+      var(--bg);
+    color: var(--text);
+  }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; }
+  .panel-2 { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; }
+  .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .gold { color: var(--gold); }
+  .btn-gold {
+    background: linear-gradient(180deg, #e3bf7f, #c99b4f); color: #1a1408; font-weight: 600;
+    box-shadow: 0 8px 24px -10px rgba(216, 176, 106, .6), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-gold:hover { filter: brightness(1.06); }
+  .btn-gold:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-ghost { border: 1px solid var(--line-strong); color: var(--text); }
+  .btn-ghost:hover { background: rgba(255,255,255,.04); }
+  .btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+  .field {
+    width: 100%; background: #0a0c12; border: 1px solid var(--line-strong); border-radius: 12px;
+    padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .field:focus { border-color: rgba(216,176,106,.6); box-shadow: 0 0 0 3px rgba(216,176,106,.12); }
+  .field::placeholder { color: #565b6b; }
+  .chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: #c4c8d2; transition: all .15s; }
+  .chip:hover { border-color: rgba(216,176,106,.5); color: var(--text); background: var(--gold-soft); }
+  .seat { transition: all .15s; }
+  .seat[data-on="false"] { opacity: .45; filter: grayscale(.8); }
+  .seat[data-on="false"]:hover { opacity: .75; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 12px; background: #0a0c12; border: 1px solid var(--line-strong); }
+  .seg button { padding: 7px 12px; border-radius: 9px; font-size: 12.5px; color: var(--muted); transition: all .15s; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 100%);
+    background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px;
+  }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .fade-in { animation: fadeIn .35s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .prose-board { font-size: 14px; line-height: 1.7; color: #d4d7de; }
+  .prose-board p { margin: 0 0 .7em; }
+  .prose-board strong { color: #fff; font-weight: 600; }
+  .prose-board em { color: #b7bbc6; }
+  .prose-board ul, .prose-board ol { margin: .3em 0 .9em; padding-left: 1.3em; }
+  .prose-board ul { list-style: disc; }
+  .prose-board ol { list-style: decimal; }
+  .prose-board li { margin: .25em 0; }
+  .prose-board li::marker { color: var(--gold); }
+  .prose-board h1, .prose-board h2, .prose-board h3 { color: #fff; font-weight: 600; margin: 1em 0 .4em; font-size: 15px; }
+  .prose-board code { background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+  .prose-board > *:last-child { margin-bottom: 0; }
+  .check { appearance: none; width: 18px; height: 18px; border: 1.5px solid var(--line-strong); border-radius: 6px; flex: none; cursor: pointer; display: grid; place-items: center; margin-top: 2px; }
+  .check:checked { background: var(--gold); border-color: var(--gold); }
+  .check:checked::after { content: ''; width: 9px; height: 5px; border: 2px solid #1a1408; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+  .scroll-thin::-webkit-scrollbar { width: 6px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 99px; }
+  #sidebar { transition: transform .25s ease; }
+  .dropzone { transition: border-color .15s, background .15s; }
+  .dropzone.drop-on { border-color: var(--gold) !important; background: var(--gold-soft) !important; }
+  .file-chip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 8px 6px 10px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line-strong); font-size: 12.5px; }
+  .file-chip .ext { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; flex: none; }
+
+  /* ---------- Animated characters ---------- */
+  .art-svg { display: block; border-radius: 50%; }
+  .art-svg .breathe { transform-box: view-box; transform-origin: 60px 141px; animation: breathe 4.6s ease-in-out infinite; }
+  .art-svg .eyes { transform-box: fill-box; transform-origin: center; animation: blink 5.5s infinite; }
+  .art-svg .mouth { transform-box: fill-box; transform-origin: center; transition: transform .15s; }
+  .talking .art-svg .mouth { animation: talk .19s ease-in-out infinite alternate; }
+  .talking .art-svg .breathe { animation: nod 1.6s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: translateY(.8px) scale(1.012); } }
+  @keyframes nod { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-1.6deg) translateY(.5px); } 65% { transform: rotate(1.4deg); } }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+  @keyframes talk { from { transform: scaleY(.5) scaleX(1); } to { transform: scaleY(2.4) scaleX(.85); } }
+
+  /* ---------- Boardroom stage ---------- */
+  .stage { position: relative; height: clamp(320px, 42vw, 430px); }
+  .table-top {
+    position: absolute; left: 21%; right: 21%; top: 29%; bottom: 29%; border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 30%, #3b2b1b 0%, #24180e 55%, #160f08 100%);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.07), inset 0 -10px 30px rgba(0,0,0,.45), 0 30px 60px -25px rgba(0,0,0,.9), 0 0 0 5px #100b06, 0 0 0 6px rgba(216,176,106,.28);
+    display: grid; place-items: center; text-align: center; padding: 0 12%;
+  }
+  .table-top.chair-live { box-shadow: inset 0 2px 0 rgba(255,255,255,.07), 0 0 0 5px #100b06, 0 0 0 6px rgba(216,176,106,.6), 0 0 50px -6px rgba(216,176,106,.45); }
+  .seat-pos { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: 120px; z-index: 2; }
+  .seat-pos .art-wrap { position: relative; border-radius: 50%; transition: transform .35s cubic-bezier(.2,1.4,.4,1), box-shadow .35s, filter .35s; box-shadow: 0 0 0 2px rgba(255,255,255,.08), 0 10px 25px -10px rgba(0,0,0,.8); }
+  .seat-pos.talking .art-wrap, .seat-pos.thinking .art-wrap { transform: scale(1.1); box-shadow: 0 0 0 3px var(--c), 0 0 36px 2px color-mix(in srgb, var(--c) 50%, transparent); }
+  .stage.live .seat-pos:not(.talking):not(.thinking) .art-wrap { filter: saturate(.55) brightness(.72); }
+  .seat-pos .who { text-align: center; line-height: 1.15; }
+  .bubble-pop { position: absolute; top: -10px; right: -10px; min-width: 32px; height: 32px; padding: 0 7px; border-radius: 999px; display: grid; place-items: center; font-size: 17px;
+    background: var(--panel-2); border: 1px solid var(--line-strong); box-shadow: 0 6px 18px -6px rgba(0,0,0,.8); animation: pop .45s cubic-bezier(.2,1.7,.4,1) both; }
+  @keyframes pop { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0); } }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: dot 1.1s infinite ease-in-out; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+  .vote-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; border-radius: 6px; animation: pop .45s cubic-bezier(.2,1.7,.4,1) both; }
+  .gavel { animation: gavel 1.2s ease-in-out infinite; transform-origin: 80% 80%; }
+  @keyframes gavel { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(-22deg); } 55% { transform: rotate(4deg); } }
+  /* While a meeting is live, keep the table in view as the transcript grows */
+  @media (min-width: 768px) and (min-height: 700px) {
+    .stage-sticky { position: sticky; top: 76px; z-index: 10; box-shadow: 0 24px 40px -20px rgba(0,0,0,.9); }
+    .stage-sticky .arena { height: 420px; }
+  }
+  @media (max-width: 640px) {
+    .stage { height: 330px; }
+    .seat-pos { width: 84px; }
+    .table-top { left: 18%; right: 18%; }
+  }
+
+
+  /* ---------- Curved stage (like a panel show) ---------- */
+  .arena { position: relative; height: 480px; border-radius: 18px; overflow: hidden; isolation: isolate;
+    background: radial-gradient(ellipse 75% 60% at 50% 36%, #27508f 0%, #163063 42%, #0b1734 78%, #070e22 100%); }
+  .arena::before { content: ''; position: absolute; inset: 0; z-index: -1;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 64px), radial-gradient(ellipse at 50% 115%, rgba(0,0,0,.6), transparent 60%); }
+  .arc-line { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .bust-seat { position: absolute; transform: translate(-50%, -86%); z-index: 2; transition: transform .45s cubic-bezier(.2,1.3,.4,1), filter .35s; }
+  .bust-seat .art-svg { filter: drop-shadow(0 14px 14px rgba(0,0,0,.55)); }
+  .bust-seat.talking, .bust-seat.thinking { transform: translate(-50%, -95%) scale(1.14); z-index: 3; }
+  .bust-seat.talking .art-svg { filter: drop-shadow(0 0 16px color-mix(in srgb, var(--c) 75%, transparent)) drop-shadow(0 14px 14px rgba(0,0,0,.55)); }
+  .bust-seat.talking::after { content: ''; position: absolute; left: 50%; bottom: -8px; width: 130%; height: 26px; transform: translateX(-50%); z-index: -1;
+    background: radial-gradient(ellipse, color-mix(in srgb, var(--c) 55%, transparent), transparent 70%); }
+  .arena.live .bust-seat:not(.talking):not(.thinking) { filter: brightness(.55) saturate(.7); }
+  /* 3D picture characters: edges fade into the stage; frames swap to blink and talk */
+  .portrait { position: relative; filter: drop-shadow(0 14px 14px rgba(0,0,0,.5)); }
+  .portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .portrait .p-talk, .portrait .p-blink { opacity: 0; }
+  .portrait .p-blink { animation: imgBlink 5.5s steps(1, end) infinite; }
+  .talking .portrait { animation: portraitNod 1.5s ease-in-out infinite; }
+  .talking .portrait .p-talk { animation: mouthFlap .95s steps(1, end) infinite; }
+  .talking .portrait .p-blink { animation: none; }
+  .bust-seat.talking .portrait { filter: drop-shadow(0 0 18px color-mix(in srgb, var(--c) 70%, transparent)) drop-shadow(0 14px 14px rgba(0,0,0,.5)); }
+  @keyframes imgBlink { 0% { opacity: 0; } 95.5% { opacity: 1; } 98% { opacity: 0; } }
+  @keyframes mouthFlap { 0% { opacity: 0; } 10% { opacity: 1; } 28% { opacity: 0; } 38% { opacity: 1; } 60% { opacity: 0; } 70% { opacity: 1; } 86% { opacity: 0; } }
+  @keyframes portraitNod { 0%, 100% { transform: rotate(0) translateY(0); } 30% { transform: rotate(-1.2deg) translateY(1px); } 65% { transform: rotate(1deg) translateY(-1px); } }
+  .bust-label { position: absolute; transform: translateX(-50%); text-align: center; z-index: 2; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  .head-dots { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); padding: 5px 9px; border-radius: 999px; background: rgba(8,14,30,.85); border: 1px solid rgba(255,255,255,.12); z-index: 4; }
+  .top-pill { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    padding: 6px 12px; border-radius: 999px; background: rgba(5,10,24,.6); border: 1px solid rgba(255,255,255,.1); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; color: #dbe4f5; }
+  .caption { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(94%, 780px); z-index: 4; min-height: 62px;
+    padding: 11px 15px; border-radius: 14px; background: rgba(4,9,22,.78); border: 1px solid rgba(255,255,255,.09); backdrop-filter: blur(8px); }
+  .caption-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .cursor { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: currentColor; animation: cursorBlink 1s steps(1) infinite; }
+  @keyframes cursorBlink { 50% { opacity: 0; } }
+  @media (max-width: 640px) { .arena { height: 400px; } }
+
+  /* ---------- Mentor ---------- */
+  .nav-btn { transition: background .15s; }
+  .nav-btn:hover { background: rgba(255,255,255,.03); }
+  .nav-btn.active { background: rgba(216,176,106,.1); box-shadow: inset 0 0 0 1px rgba(216,176,106,.25); }
+  .mentor-hero { background: radial-gradient(ellipse 70% 120% at 15% 50%, rgba(39,80,143,.55), transparent 70%), var(--panel); }
+  .mentor-face { flex: none; filter: drop-shadow(0 16px 18px rgba(0,0,0,.5)); }
+  .mentor-face.thinking .portrait { animation: portraitNod 2.4s ease-in-out infinite; }
+  .stat-pill { font-size: 11.5px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid var(--line-strong); color: #c9ccd5; }
+  .mentor-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border-radius: 14px; background: #0a0c12; border: 1px solid var(--line-strong); scrollbar-width: none; }
+  .mentor-tabs button { flex: 1 0 auto; padding: 8px 14px; border-radius: 10px; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all .15s; }
+  .mentor-tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .chip:disabled { opacity: .45; cursor: not-allowed; }
+  .roadmap { display: grid; gap: 8px; }
+  .more-opts > summary { list-style: none; }
+  .more-opts > summary::before { content: '▸ '; }
+  .more-opts[open] > summary::before { content: '▾ '; }
+  .goal-strip { background: radial-gradient(ellipse 60% 140% at 0% 0%, rgba(216,176,106,.12), transparent 60%), var(--panel); border-color: rgba(216,176,106,.25); }
+  .goal-item { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+
+  /* ---------- Transcript ---------- */
+  .round-divider { display: flex; align-items: center; gap: 12px; margin: 30px 0 16px; }
+  .round-divider::before, .round-divider::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); }
+  .msg { display: flex; gap: 12px; }
+  .msg .bubble { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: 14px 16px; border-left: 2px solid var(--c); }
+  .clamp { max-height: 9.5rem; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+  .msg.new { animation: slideIn .45s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body class="font-sans antialiased">
+<div class="flex h-full overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 shrink-0 -translate-x-full lg:translate-x-0 flex flex-col border-r border-white/5 bg-[#0b0d13]">
+    <div class="px-5 pt-6 pb-5 flex items-center gap-3">
+      <div class="h-9 w-9 rounded-xl grid place-items-center" style="background:linear-gradient(135deg,#e3bf7f,#8a6a35)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1408" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>
+      </div>
+      <div>
+        <div class="font-serif text-[22px] leading-none">Boardroom</div>
+        <div class="text-[11px] text-[color:var(--muted)] mt-1">Your personal business advisors</div>
+      </div>
+    </div>
+
+    <div class="px-3 pb-3 space-y-1">
+      <button id="navToday" onclick="showToday()" class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3">
+        <span class="h-8 w-8 rounded-full grid place-items-center shrink-0" style="background:var(--gold-soft)">🏠</span>
+        <span><span class="block text-sm font-medium">Today</span><span class="block text-[11px] text-[color:var(--muted)]">Your day at a glance</span></span>
+      </button>
+      <button id="navMentor" onclick="showMentor()" class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3">
+        <span id="navMentorFace" class="shrink-0"></span>
+        <span><span class="block text-sm font-medium">My Mentor</span><span class="block text-[11px] text-[color:var(--muted)]">Life, money & wisdom</span></span>
+      </button>
+      <button id="navBoard" onclick="showBoard()" class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3">
+        <span class="h-8 w-8 rounded-full grid place-items-center shrink-0" style="background:var(--gold-soft)">🏛️</span>
+        <span><span class="block text-sm font-medium">Business Board</span><span class="block text-[11px] text-[color:var(--muted)]">6 advisors debate & vote</span></span>
+      </button>
+    </div>
+
+    <div class="px-3 flex-1 overflow-y-auto scroll-thin border-t border-white/5 pt-2">
+      <div class="flex items-center justify-between px-2 mb-2 mt-2">
+        <span class="label">Projects</span>
+        <button onclick="openProfile()" class="text-xs gold hover:underline">+ New</button>
+      </div>
+      <div id="projectList" class="space-y-1 mb-6"></div>
+
+      <div class="flex items-center justify-between px-2 mb-2">
+        <span class="label">Meetings</span>
+        <button onclick="newMeeting()" class="text-xs gold hover:underline">+ New</button>
+      </div>
+      <div id="meetingList" class="space-y-1 pb-6"></div>
+    </div>
+
+    <div class="p-4 border-t border-white/5">
+      <div id="statusPill" class="text-xs text-[color:var(--muted)] flex items-center gap-2"></div>
+      <p class="text-[10.5px] text-[color:var(--muted)] opacity-70 mt-2 leading-snug">Advisors and the mentor are fictional AI characters.</p>
+    </div>
+  </aside>
+  <div id="scrim" onclick="toggleSidebar(false)" class="fixed inset-0 z-30 bg-black/60 hidden lg:hidden"></div>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 overflow-y-auto scroll-thin" id="main">
+    <header class="sticky top-0 z-20 backdrop-blur-xl bg-[#08090d]/75 border-b border-white/5">
+      <div class="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center gap-3">
+        <button onclick="toggleSidebar(true)" class="lg:hidden -ml-1 p-2 rounded-lg hover:bg-white/5" aria-label="Open menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div id="headerTitle" class="min-w-0 flex-1 flex items-center gap-3"></div>
+        <div id="headerActions" class="flex items-center gap-2"></div>
+      </div>
+    </header>
+    <div id="view" class="max-w-5xl mx-auto px-4 md:px-8 py-8"></div>
+  </main>
+</div>
+
+<!-- Project profile modal -->
+<div id="modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeProfile()"></div>
+  <div class="relative h-full overflow-y-auto p-4 flex items-start md:items-center justify-center">
+    <form id="profileForm" onsubmit="saveProfile(event)" class="panel w-full max-w-2xl p-6 md:p-8 my-8 fade-in">
+      <div class="flex items-start justify-between gap-4 mb-1">
+        <h2 id="modalTitle" class="font-serif text-3xl">Tell us about your business</h2>
+        <button type="button" onclick="closeProfile()" class="p-1.5 rounded-lg hover:bg-white/5 text-[color:var(--muted)]" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-sm text-[color:var(--muted)] mb-6">The more details you give, the better the advice. Your advisors read this before every meeting.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block md:col-span-2"><span class="label block mb-1.5">Project name *</span>
+          <input name="name" required class="field" placeholder="e.g. FreshFleet"></label>
+        <label class="block md:col-span-2"><span class="label block mb-1.5">What is it, in one or two sentences? *</span>
+          <textarea name="tagline" required rows="2" class="field resize-none" placeholder="e.g. Same-day grocery delivery for small restaurants in Toronto, ordered over WhatsApp."></textarea></label>
+        <label class="block"><span class="label block mb-1.5">Industry</span>
+          <input name="industry" class="field" placeholder="e.g. Food logistics / B2B SaaS"></label>
+        <label class="block"><span class="label block mb-1.5">Stage</span>
+          <select name="stage" class="field">
+            <option value="">Select a stage</option>
+            <option>Idea</option>
+            <option>Building MVP</option>
+            <option>Launched, pre-revenue</option>
+            <option>Early revenue</option>
+            <option>Growing</option>
+            <option>Scaling</option>
+          </select></label>
+        <label class="block md:col-span-2"><span class="label block mb-1.5">Target customer</span>
+          <input name="customer" class="field" placeholder="Who exactly pays you? e.g. owners of 10–40 seat restaurants"></label>
+        <label class="block md:col-span-2"><span class="label block mb-1.5">Business model & pricing</span>
+          <input name="revenue_model" class="field" placeholder="e.g. 8% markup per order + C$29/month subscription"></label>
+        <label class="block md:col-span-2"><span class="label block mb-1.5">Current traction & numbers</span>
+          <textarea name="traction" rows="2" class="field resize-none" placeholder="Users, revenue, growth, costs, team size, runway…"></textarea></label>
+        <label class="block"><span class="label block mb-1.5">Biggest challenge right now</span>
+          <textarea name="challenge" rows="3" class="field resize-none" placeholder="What keeps you up at night?"></textarea></label>
+        <label class="block"><span class="label block mb-1.5">Goal for the next 90 days</span>
+          <textarea name="goal" rows="3" class="field resize-none" placeholder="e.g. 50 paying restaurants, C$10,000 monthly revenue"></textarea></label>
+        <label class="block"><span class="label block mb-1.5">Your age</span>
+          <input name="age" class="field" inputmode="numeric" placeholder="e.g. 22"></label>
+        <label class="block"><span class="label block mb-1.5">Your big life goal</span>
+          <input name="ambition" class="field" placeholder="e.g. Run a profitable business by age 30"></label>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mt-8">
+        <button type="button" id="deleteProjectBtn" onclick="deleteProject()" class="text-sm text-red-400/80 hover:text-red-400 hidden">Delete project</button>
+        <div class="flex gap-2 ml-auto">
+          <button type="button" onclick="closeProfile()" class="btn-ghost rounded-xl px-4 py-2.5 text-sm">Cancel</button>
+          <button type="submit" class="btn-gold rounded-xl px-5 py-2.5 text-sm">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] hidden panel-2 px-4 py-2.5 text-sm shadow-2xl"></div>
+<input type="file" id="filePicker" multiple class="hidden"
+  accept=".pdf,.docx,.xlsx,.xlsm,.csv,.tsv,.txt,.md,.json"
+  onchange="addFiles(this.files, this.dataset.target); this.value=''">
+
+<script>
+const STORE_KEY = 'boardroom.v1';
+const COLORS = {
+  maya_rivers: '#818cf8',
+  ravi_stone: '#38bdf8',
+  nora_vale: '#f472b6',
+  leo_hart: '#34d399',
+  ada_quinn: '#f59e0b',
+  sam_oakes: '#a78bfa',
+};
+// Cartoon looks for each fictional advisor
+const LOOKS = {
+  maya_rivers: { skin: '#c98f68', eye: '#3b2a1e', hair: '#1f1612', style: 'long', brow: '#1f1612', shirt: '#312e81', outfit: 'tee' },
+  ravi_stone: { skin: '#a9714b', eye: '#2b1d14', hair: '#17110d', style: 'swept', brow: '#17110d', shirt: '#0f3a4d', outfit: 'tee' },
+  nora_vale: { skin: '#f0cdb4', eye: '#55704f', hair: '#7a3b22', style: 'long', brow: '#6a3520', glasses: 'round', frame: '#d4d4da', shirt: '#4a1d3a', outfit: 'turtleneck' },
+  leo_hart: { skin: '#e6b38f', eye: '#3f5a45', hair: '#b08a4f', style: 'spiky', brow: '#8e6f3e', stubble: true, shirt: '#134e3a', outfit: 'tee' },
+  ada_quinn: { skin: '#7d5138', eye: '#21150e', hair: '#120c09', style: 'short', brow: '#120c09', shirt: '#3f2f12', tie: '#f59e0b', outfit: 'suit' },
+  sam_oakes: { skin: '#eec3a4', eye: '#4b5a6a', hair: '#c9c9cf', style: 'sides', brow: '#a8a8ae', glasses: 'thick', frame: '#27272a', shirt: '#3b3457', tie: '#a78bfa', outfit: 'suit' },
+  mentor: { skin: '#d9a47e', eye: '#3b2f28', hair: '#4a4a50', style: 'short', brow: '#4a4a50', stubble: true, shirt: '#57481c', outfit: 'turtleneck' },
+};
+const DEFAULT_LOOK = { skin: '#d9a47e', eye: '#3b2f28', hair: '#33302e', style: 'short', brow: '#33302e', shirt: '#334155', outfit: 'tee' };
+const DEFAULT_SEATS = ['maya_rivers', 'ravi_stone', 'nora_vale', 'leo_hart', 'ada_quinn', 'sam_oakes'];
+const QUICK_PROMPTS = [
+  'What is the single most important thing I should do this week?',
+  'Pressure-test my pricing and offer.',
+  'How do I get my next 100 customers?',
+  'What will kill this business? Be brutal.',
+  'Should I raise money, bootstrap, or pivot?',
+  'Review my plan for the next 90 days.',
+];
+const PHASES = {
+  opening: ['Round 1', 'First opinions'],
+  debate: ['Round 2', 'Discussion'],
+  motion: ['Host', 'Writing the proposal'],
+  vote: ['Round 3', 'The vote'],
+  followup: ['Follow-up', 'Your question'],
+  resolution: ['Host', 'Writing the final answer'],
+  pitch: ['Idea lab', 'The pitches'],
+  ranking: ['Host', 'Scoring the ideas'],
+  reports: ['Weekly report', 'Team updates'],
+  summary: ['Host', 'Writing your weekly report'],
+};
+const REACTION_EMOJI = { agree: '👍', disagree: '🤨', mixed: '🤔' };
+const REACTION_WORD = { agree: 'agrees with', disagree: 'challenges', mixed: 'partly agrees with' };
+
+let state = loadState();
+let advisors = [];
+let current = null;
+let view = 'today';  // 'today' (home, static/today.js), 'board' (business advisors) or 'mentor' (life mentor, static/mentor.js)
+let editingId = null;
+// What is happening on stage right now (not saved)
+let live = { m: null, speaker: null, mode: null, reactions: {} };
+const expanded = new Set();
+
+// ---------- utils ----------
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Dramatic pauses only while someone is watching; hidden tabs throttle timers heavily
+const pace = ms => document.hidden ? Promise.resolve() : sleep(ms);
+const colorOf = id => COLORS[id] || '#94a3b8';
+const advisorOf = id => (id === 'mentor' && window.mentorMeta ? mentorMeta() : advisors.find(a => a.id === id)) || { id, name: id, role: '', initials: '?' };
+const firstName = id => advisorOf(id).name.split(' ')[0];
+const shownOk = e => e && e.status !== 'pending' && e.shown !== false;
+
+function md(text) {
+  if (window.marked && window.DOMPurify) return DOMPurify.sanitize(marked.parse(text || ''));
+  return '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (s && Array.isArray(s.projects)) return s;
+  } catch {}
+  return { projects: [], activeId: null };
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch { toast('Browser storage is full. Remove some files or old meetings so changes are saved.'); }
+}
+
+async function api(path, body) {
+  const opts = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined;
+  const r = await fetch(path, opts);
+  let data = {};
+  try { data = await r.json(); } catch {}
+  if (!r.ok) throw new Error(data.detail || `Request failed (HTTP ${r.status})`);
+  return data;
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add('hidden'), 2600);
+}
+
+function timeAgo(ts) {
+  const s = (Date.now() - ts) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 604800) return Math.floor(s / 86400) + 'd ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+// ---------- characters ----------
+function shade(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  const t = pct < 0 ? 0 : 255, p = Math.abs(pct) / 100;
+  const ch = s => Math.round((t - ((n >> s) & 255)) * p + ((n >> s) & 255));
+  return '#' + ((1 << 24) + (ch(16) << 16) + (ch(8) << 8) + ch(0)).toString(16).slice(1);
+}
+
+// The 3D picture frames from tools/make_portraits.py: talking swaps in the open-mouth frame
+function portraitHTML(id, P, size, framed) {
+  if (framed) {
+    return `<img src="${P.closed}" alt="" class="art-svg framed" style="width:${size}px;height:${size}px;object-fit:cover;transform:scale(1.45) translateY(9%)">`;
+  }
+  const blinkDelay = ((Object.keys(COLORS).indexOf(id) + 1) * 1.9) % 5.5;
+  return `
+    <div class="portrait" style="width:${size}px;height:${size}px">
+      <img class="p-base" src="${P.closed}" alt="${esc(advisorOf(id).name)}">
+      ${P.talk ? `<img class="p-talk" src="${P.talk}" alt="">` : ''}
+      ${P.blink ? `<img class="p-blink" src="${P.blink}" alt="" style="animation-delay:${blinkDelay}s">` : ''}
+    </div>`;
+}
+
+// A 3D-style cartoon bust; framed = round avatar crop with a coloured backdrop
+function bust(id, { size = 120, framed = false } = {}) {
+  const P = advisorOf(id).portrait;
+  if (P) return portraitHTML(id, P, size, framed);
+  const L = LOOKS[id] || DEFAULT_LOOK;
+  const k = id.replace(/\W/g, '');
+  const skinD = shade(L.skin, -20), skinL = shade(L.skin, 16);
+  const hair = L.hair || '#2b2b2b';
+  const blink = ((Object.keys(LOOKS).indexOf(id) + 1) * 1.7) % 6;
+  const defs = `<defs>
+    <radialGradient id="sk${k}" cx="40%" cy="34%" r="72%"><stop offset="0" stop-color="${skinL}"/><stop offset=".6" stop-color="${L.skin}"/><stop offset="1" stop-color="${skinD}"/></radialGradient>
+    <linearGradient id="hr${k}" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${shade(hair, 22)}"/><stop offset="1" stop-color="${shade(hair, -30)}"/></linearGradient>
+    <linearGradient id="cl${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(L.shirt, 16)}"/><stop offset="1" stop-color="${shade(L.shirt, -35)}"/></linearGradient>
+    ${framed ? `<radialGradient id="bg${k}" cx="50%" cy="28%" r="80%"><stop offset="0" stop-color="${colorOf(id)}" stop-opacity=".6"/><stop offset="1" stop-color="#0b1426"/></radialGradient>` : ''}
+  </defs>`;
+  const H = `url(#hr${k})`, S = `url(#sk${k})`, C = `url(#cl${k})`;
+
+  const hairBack = L.style === 'long'
+    ? `<path d="M29 62 Q22 100 33 124 L87 124 Q98 100 91 62 Q89 22 60 21 Q31 22 29 62Z" fill="${H}"/>` : '';
+  const hairTop = {
+    swept: `<path d="M30 60 Q26 24 58 19 Q90 17 93 46 Q94 55 90 63 Q87 42 72 37 Q53 33 41 45 Q34 52 30 60Z" fill="${H}"/><path d="M42 44 Q57 31 84 39" stroke="${shade(hair, 30)}" stroke-width="1.6" fill="none" opacity=".5"/>`,
+    long: `<path d="M30 62 Q29 22 60 21 Q91 22 90 62 Q85 38 60 34 Q37 36 30 62Z" fill="${H}"/>`,
+    sides: `<path d="M29 70 Q26 50 37 40 Q34 56 36 74Z M91 70 Q94 50 83 40 Q86 56 84 74Z" fill="${H}"/><path d="M41 38 Q60 26 79 38 Q60 32 41 38Z" fill="${H}" opacity=".9"/>`,
+    spiky: `<path d="M30 58 Q29 31 40 27 L43 20 L49 25 L54 17 L60 23 L66 17 L71 25 L77 20 L80 28 Q91 33 90 58 Q86 40 74 36 Q60 39 46 36 Q34 40 30 58Z" fill="${H}"/>`,
+    short: `<path d="M30 57 Q30 23 60 22 Q90 23 90 57 Q86 39 74 35 Q60 38 46 35 Q34 39 30 57Z" fill="${H}"/>`,
+  }[L.style] || '';
+  const shine = L.bald ? `<ellipse cx="50" cy="35" rx="11" ry="5" fill="#fff" opacity=".32" transform="rotate(-12 50 35)"/>` : '';
+  const beardPath = 'M31 66 Q31 106 60 110 Q89 106 89 66 Q86 84 74 87 Q60 83 46 87 Q34 84 31 66Z';
+  const stubblePath = 'M33 70 Q35 92 60 94 Q85 92 87 70 Q84 83 74 85 Q60 82 46 85 Q36 83 33 70Z';
+  const beard = L.beard ? `<path d="${beardPath}" fill="${H}"/>` : L.stubble ? `<path d="${stubblePath}" fill="${hair}" opacity=".28"/>` : '';
+  const mustache = L.beard ? `<path d="M48 80 Q60 74 72 80 Q60 78.5 48 80Z" fill="${H}"/>` : '';
+  const frame = L.frame || '#1a1a1a';
+  const glasses = L.glasses === 'thick'
+    ? `<g fill="rgba(255,255,255,.08)" stroke="${frame}" stroke-width="2.8"><rect x="39.5" y="51.5" width="19" height="16" rx="5"/><rect x="61.5" y="51.5" width="19" height="16" rx="5"/><path d="M58.5 58 h3 M39.5 57 L31 55 M80.5 57 L89 55" fill="none"/></g>`
+    : L.glasses === 'round'
+      ? `<g fill="rgba(255,255,255,.07)" stroke="${frame}" stroke-width="1.8"><circle cx="49" cy="60" r="9.5"/><circle cx="71" cy="60" r="9.5"/><path d="M58.5 59 h3 M39.5 58 L31 56 M80.5 58 L89 56" fill="none"/></g>`
+      : '';
+  const shoulders = `<path d="M6 141 Q8 108 38 100 Q60 95 82 100 Q112 108 114 141Z" fill="${C}"/>`;
+  const outfit = {
+    suit: `${shoulders}<path d="M47 99 L60 121 L73 99Z" fill="#f3f4f6"/><path d="M57.4 103 L62.6 103 L64.6 124 L60 131 L55.4 124Z" fill="${L.tie || '#334155'}"/><path d="M47 99 L60 121 L49 141 M73 99 L60 121 L71 141" stroke="rgba(0,0,0,.35)" stroke-width="1.6" fill="none"/>`,
+    turtleneck: `${shoulders}<rect x="46" y="86" width="28" height="20" rx="9" fill="${C}"/><path d="M47 92 h26 M47 97 h26 M47 102 h26" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`,
+    tee: `${shoulders}<path d="M46 100 Q60 111 74 100" stroke="${shade(L.shirt, 25)}" stroke-width="3" fill="none"/>`,
+  }[L.outfit || 'tee'];
+  const mouthY = L.beard ? 82.5 : 81;
+
+  const body = `
+    <g class="breathe">
+      ${hairBack}
+      <path d="M49 82 L49 102 Q60 108 71 102 L71 82Z" fill="${skinD}"/>
+      ${outfit}
+      <ellipse cx="31" cy="64" rx="5.2" ry="8.5" fill="${S}"/><ellipse cx="89" cy="64" rx="5.2" ry="8.5" fill="${S}"/>
+      <ellipse cx="31.5" cy="64" rx="2.4" ry="4.5" fill="${skinD}" opacity=".5"/><ellipse cx="88.5" cy="64" rx="2.4" ry="4.5" fill="${skinD}" opacity=".5"/>
+      <ellipse cx="60" cy="61" rx="29" ry="33" fill="${S}"/>
+      <ellipse cx="45" cy="75" rx="5.5" ry="3.2" fill="#ff7b72" opacity=".17"/><ellipse cx="75" cy="75" rx="5.5" ry="3.2" fill="#ff7b72" opacity=".17"/>
+      ${shine}${beard}${hairTop}
+      <g class="eyes" style="animation-delay:${blink}s">
+        <ellipse cx="49" cy="60" rx="6.3" ry="6.9" fill="#fff"/><ellipse cx="71" cy="60" rx="6.3" ry="6.9" fill="#fff"/>
+        <circle cx="49.7" cy="61" r="4" fill="${L.eye}"/><circle cx="71.7" cy="61" r="4" fill="${L.eye}"/>
+        <circle cx="49.7" cy="61" r="2.1" fill="#0b0b0e"/><circle cx="71.7" cy="61" r="2.1" fill="#0b0b0e"/>
+        <circle cx="48.2" cy="59.2" r="1.35" fill="#fff"/><circle cx="70.2" cy="59.2" r="1.35" fill="#fff"/>
+      </g>
+      <path d="M42.4 56 Q49 52 55.6 56 M64.4 56 Q71 52 77.6 56" stroke="${skinD}" stroke-width="1.3" fill="none" opacity=".8"/>
+      <path d="M41 49.5 Q49 45 56.5 48.5 M63.5 48.5 Q71 45 79 49.5" stroke="${L.brow || hair}" stroke-width="3.3" fill="none" stroke-linecap="round"/>
+      ${glasses}
+      <path d="M60 62 Q55.5 72.5 57 75.5 Q60 77.8 63.4 75.5 Q64.6 72.5 60 62Z" fill="${skinD}" opacity=".5"/>
+      <ellipse cx="61.5" cy="70" rx="1.2" ry="2.4" fill="#fff" opacity=".25"/>
+      ${L.grin
+        ? `<g class="mouth"><path d="M47 78.5 Q60 93 73 78.5 Q60 83 47 78.5Z" fill="#5b1f1a"/><path d="M49.5 79.8 Q60 83.8 70.5 79.8 L69.8 81.6 Q60 85.2 50.2 81.6Z" fill="#fff" opacity=".92"/></g>`
+        : `<path class="mouth" d="M51 ${mouthY} Q60 ${mouthY + 8} 69 ${mouthY} Q60 ${mouthY + 4.5} 51 ${mouthY}Z" fill="#6b2620"/>`}
+      ${mustache}
+    </g>`;
+  if (framed) {
+    return `<svg viewBox="15 16 90 90" width="${size}" height="${size}" class="art-svg framed" aria-hidden="true">${defs}<rect x="0" y="0" width="120" height="141" fill="url(#bg${k})"/>${body}</svg>`;
+  }
+  return `<svg viewBox="0 0 120 141" width="${size}" height="${Math.round(size * 141 / 120)}" class="art-svg bust" aria-hidden="true">${defs}${body}</svg>`;
+}
+
+function art(id, size) { return bust(id, { size, framed: true }); }
+
+function avatar(id, size = 36) {
+  return `<div class="rounded-full shrink-0 overflow-hidden" style="width:${size}px;height:${size}px;box-shadow:0 0 0 1.5px ${colorOf(id)}66">${art(id, size)}</div>`;
+}
+
+const activeProject = () => state.projects.find(p => p.id === state.activeId) || null;
+
+function profileOf(p) {
+  const { name, tagline, industry, stage, customer, revenue_model, traction, challenge, goal, age, ambition } = p;
+  return {
+    name, tagline, industry, stage, customer, revenue_model, traction, challenge, goal, age: age || '', ambition: ambition || '',
+    team_tasks: window.tasksSummary ? tasksSummary(p) : '',
+  };
+}
+
+// Short summaries of earlier meetings, so the board remembers what it already said
+function memoryOf(p, exclude) {
+  return p.meetings
+    .filter(m => m !== exclude && m.synthesis?.status === 'done' && m.synthesis.data?.headline)
+    .slice(0, 5)
+    .map(m => `${new Date(m.createdAt).toLocaleDateString()} - Q: "${m.question}" -> Board verdict: ${m.synthesis.data.headline}`);
+}
+
+function toggleSidebar(open) {
+  $('#sidebar').classList.toggle('-translate-x-full', !open);
+  $('#scrim').classList.toggle('hidden', !open);
+}
+
+// ---------- files ----------
+// Project files are read in every meeting; draft files attach to the next question only
+let draftFiles = [];
+const EXT_COLORS = { pdf: '#f87171', docx: '#60a5fa', xlsx: '#34d399', xlsm: '#34d399', csv: '#34d399', tsv: '#34d399' };
+
+function docsOf(p, m) {
+  return [...(p.files || []), ...(m?.attachments || [])]
+    .filter(f => f.status === 'ready')
+    .map(f => ({ name: f.name, text: f.text }));
+}
+
+function fileChip(f, removeJs) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  const c = EXT_COLORS[ext] || '#a1a1aa';
+  const meta = f.status === 'reading' ? '<span class="gold">Reading…</span>'
+    : `${f.pages ? `${f.pages} ${ext === 'pdf' ? 'page' : 'sheet'}${f.pages > 1 ? 's' : ''} · ` : ''}${Math.max(1, Math.round(f.chars / 1000))}k chars${f.truncated ? ' · cut short' : ''}`;
+  return `
+    <span class="file-chip" title="${esc(f.name)}">
+      <span class="ext" style="background:${c}22;color:${c}">${esc(ext.toUpperCase() || 'FILE')}</span>
+      <span class="truncate max-w-[180px] text-[#d4d7de]">${esc(f.name)}</span>
+      <span class="text-[11px] text-[color:var(--muted)] whitespace-nowrap">${meta}</span>
+      ${removeJs ? `<button type="button" onclick="${removeJs}" class="text-[color:var(--muted)] hover:text-white px-1" aria-label="Remove ${esc(f.name)}">×</button>` : ''}
+    </span>`;
+}
+
+function renderFiles(target) {
+  if (target === 'project') {
+    const el = document.getElementById('projectFiles');
+    if (el) el.innerHTML = projectFilesHTML(activeProject());
+  } else {
+    const el = document.getElementById('draftFiles');
+    if (el) el.innerHTML = draftFiles.map(f => fileChip(f, `removeFile('draft','${f.id}')`)).join('');
+  }
+}
+
+function projectFilesHTML(p) {
+  return p.files.length
+    ? p.files.map(f => fileChip(f, `removeFile('project','${f.id}')`)).join('')
+    : `<span class="text-[13px] text-[color:var(--muted)]">Drop your business plan, pitch deck PDF, financials or customer data here. PDF, Word, Excel, CSV or text.</span>`;
+}
+
+function pickFiles(target) {
+  const input = $('#filePicker');
+  input.dataset.target = target;
+  input.click();
+}
+
+function removeFile(target, id) {
+  if (target === 'project') {
+    const p = activeProject();
+    p.files = p.files.filter(f => f.id !== id);
+    save();
+  } else {
+    draftFiles = draftFiles.filter(f => f.id !== id);
+  }
+  renderFiles(target);
+}
+
+async function addFiles(list, target) {
+  const p = activeProject();
+  if (!p || !list || !list.length) return;
+  const arr = () => target === 'project' ? p.files : draftFiles;
+
+  await Promise.all([...list].map(async file => {
+    if (file.size > 15 * 1024 * 1024) { toast(`${file.name} is larger than 15 MB.`); return; }
+    const f = { id: uid(), name: file.name, status: 'reading' };
+    arr().push(f);
+    renderFiles(target);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await fetch('/api/extract', { method: 'POST', body: fd });
+      let data = {};
+      try { data = await r.json(); } catch {}
+      if (!r.ok) throw new Error(data.detail || `Upload failed (HTTP ${r.status})`);
+      Object.assign(f, { status: 'ready', text: data.text, chars: data.chars, truncated: data.truncated, pages: data.pages });
+    } catch (e) {
+      const a = arr();
+      a.splice(a.indexOf(f), 1);
+      toast(`${file.name}: ${e.message}`);
+    }
+    renderFiles(target);
+  }));
+  if (target === 'project') {
+    save();
+    const ready = p.files.filter(f => f.status === 'ready').length;
+    if (ready) toast(`Your advisors will read ${ready === 1 ? 'this file' : `these ${ready} files`} in every meeting.`);
+  }
+}
+
+function dropAttrs(target) {
+  return `ondragover="event.preventDefault();this.classList.add('drop-on')"
+    ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drop-on')"
+    ondrop="event.preventDefault();this.classList.remove('drop-on');addFiles(event.dataTransfer.files,'${target}')"`;
+}
+
+function onPasteFiles(e) {
+  const files = e.clipboardData?.files;
+  if (files && files.length) {
+    e.preventDefault();
+    addFiles(files, 'draft');
+  }
+}
+
+// Stop the browser from opening a file dropped outside a drop zone
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+// ---------- sidebar ----------
+function renderSidebar() {
+  $('#navToday').classList.toggle('active', view === 'today');
+  $('#navMentor').classList.toggle('active', view === 'mentor');
+  $('#navBoard').classList.toggle('active', view === 'board');
+  $('#navMentorFace').innerHTML = avatar('mentor', 32);
+  $('#projectList').innerHTML = state.projects.length
+    ? state.projects.map(p => `
+      <button onclick="selectProject('${p.id}')" class="w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 ${p.id === state.activeId ? 'bg-white/[.06]' : 'hover:bg-white/[.03]'}">
+        <div class="h-7 w-7 rounded-lg grid place-items-center text-xs font-semibold" style="background:var(--gold-soft);color:var(--gold)">${esc((p.name || '?')[0].toUpperCase())}</div>
+        <div class="min-w-0">
+          <div class="text-sm truncate ${p.id === state.activeId ? 'text-white' : 'text-[#c4c8d2]'}">${esc(p.name)}</div>
+          <div class="text-[11px] text-[color:var(--muted)] truncate">${esc(p.stage || 'No stage set')}</div>
+        </div>
+      </button>`).join('')
+    : `<p class="px-3 text-xs text-[color:var(--muted)]">No projects yet.</p>`;
+
+  const p = activeProject();
+  $('#meetingList').innerHTML = p && p.meetings.length
+    ? p.meetings.map(m => {
+        const score = m.synthesis?.data?.score;
+        const t = tally(m);
+        return `
+        <button onclick="openMeeting('${m.id}')" class="w-full text-left px-3 py-2 rounded-xl ${m === current ? 'bg-white/[.06]' : 'hover:bg-white/[.03]'}">
+          <div class="text-[13px] leading-snug line-clamp-2 ${m === current ? 'text-white' : 'text-[#c4c8d2]'}">${esc(m.question)}</div>
+          <div class="text-[11px] text-[color:var(--muted)] mt-1 flex items-center gap-2">
+            <span>${timeAgo(m.createdAt)}</span>
+            ${{ debate: '<span>· Debate</span>', ideas: '<span>· 💡 Ideas</span>', growth: '<span>· 📈 Growth</span>', report: '<span>· 🗓️ Report</span>' }[m.mode] || ''}
+            ${t.total ? `<span>· ${t.for}–${t.against}</span>` : ''}
+            ${typeof score === 'number' ? `<span class="px-1.5 rounded" style="background:${scoreColor(score)}22;color:${scoreColor(score)}">${score}</span>` : ''}
+            ${m.phase && m.phase !== 'done' && live.m === m ? '<span class="gold">· live</span>' : ''}
+          </div>
+        </button>`;
+      }).join('')
+    : `<p class="px-3 text-xs text-[color:var(--muted)]">${p ? 'No meetings yet.' : ''}</p>`;
+}
+
+// ---------- header ----------
+function renderHeader() {
+  if (view === 'mentor' && window.mentorHeader) return mentorHeader();
+  if (view === 'today' && window.todayHeader) return todayHeader();
+  const p = activeProject();
+  if (!p) {
+    $('#headerTitle').innerHTML = `<span class="text-sm text-[color:var(--muted)]">Welcome</span>`;
+    $('#headerActions').innerHTML = '';
+    return;
+  }
+  $('#headerTitle').innerHTML = `
+    <div class="min-w-0">
+      <div class="font-medium truncate">${esc(p.name)}</div>
+    </div>
+    ${p.stage ? `<span class="hidden sm:inline text-[11px] px-2 py-0.5 rounded-full" style="background:var(--gold-soft);color:var(--gold)">${esc(p.stage)}</span>` : ''}`;
+  $('#headerActions').innerHTML = `
+    <button onclick="openProfile('${p.id}')" class="btn-ghost rounded-xl px-3 py-2 text-sm">Edit business</button>
+    <button onclick="newMeeting()" class="btn-gold rounded-xl px-3 py-2 text-sm hidden sm:block">New meeting</button>`;
+}
+
+// ---------- views ----------
+function renderView() {
+  renderHeader();
+  renderSidebar();
+  if (view === 'mentor' && window.renderMentor) return renderMentor();
+  if (view === 'today' && window.renderToday) return renderToday();  // static/today.js
+  const p = activeProject();
+  if (!p) return renderWelcome();
+
+  $('#view').innerHTML = current ? meetingView(p, current) : projectPage(p);
+}
+
+// The project page is split into tabs so it isn't one long scroll
+const PROJECT_TABS = [['tasks', '✅ Tasks & goal'], ['ask', '💬 Ask the board'], ['details', '📁 Business details']];
+let projectTab = 'tasks';
+
+function projectPage(p) {
+  const body = projectTab === 'ask' ? composer(p)
+    : projectTab === 'details' ? briefCard(p)
+    : (window.teamHTML ? teamHTML(p) : '');
+  return `
+    <section class="mb-5 fade-in">
+      <div class="label mb-1.5">Your business</div>
+      <h1 class="font-serif text-4xl md:text-5xl leading-tight">${esc(p.name)}</h1>
+      <p class="text-[color:var(--muted)] mt-1.5 max-w-3xl">${esc(p.tagline)}</p>
+    </section>
+    <div class="mentor-tabs mb-5" role="tablist">
+      ${PROJECT_TABS.map(([k, label]) => `<button role="tab" aria-selected="${projectTab === k}" onclick="showProjectTab('${k}')">${label}</button>`).join('')}
+    </div>
+    ${body}`;
+}
+
+function showProjectTab(tab) {
+  view = 'board';
+  current = null;
+  projectTab = tab;
+  renderView();
+  $('#main').scrollTo({ top: 0 });
+  toggleSidebar(false);
+}
+
+function renderWelcome() {
+  $('#view').innerHTML = `
+    <div class="min-h-[70vh] flex flex-col items-center justify-center text-center fade-in">
+      <div class="flex -space-x-4 mb-8">${advisors.map(a => `<div class="rounded-full overflow-hidden" style="box-shadow:0 0 0 3px var(--bg)">${art(a.id, 64)}</div>`).join('')}</div>
+      <h1 class="font-serif text-5xl md:text-6xl leading-[1.05] max-w-2xl">Your personal business advisors.</h1>
+      <p class="text-[color:var(--muted)] mt-5 max-w-lg">Tell them about your business once. Then ask about any decision: they discuss it, vote, and give you one final answer with the reasons why.</p>
+      <button onclick="openProfile()" class="btn-gold rounded-xl px-6 py-3 mt-8">Get started →</button>
+    </div>`;
+}
+
+function briefCard(p) {
+  const rows = [
+    ['Customer', p.customer], ['Model', p.revenue_model], ['Traction', p.traction],
+    ['Challenge', p.challenge], ['90-day goal', p.goal],
+  ].filter(r => r[1]);
+  return `
+  <section class="mb-6 fade-in">
+    <div class="flex items-center justify-between gap-3">
+      <div class="label">What your advisors know about the business</div>
+      <button onclick="openProfile('${p.id}')" class="btn-ghost rounded-lg px-3 py-1.5 text-xs shrink-0">Edit details</button>
+    </div>
+    ${rows.length ? `
+    <div class="grid grid-cols-2 lg:grid-cols-${Math.min(rows.length, 5)} gap-2.5 sm:gap-3 mt-4">
+      ${rows.map(([k, v]) => `
+        <div class="panel-2 p-3.5">
+          <div class="label mb-1">${k}</div>
+          <div class="text-[13px] text-[#c9ccd5] line-clamp-3">${esc(v)}</div>
+        </div>`).join('')}
+    </div>` : `
+    <button onclick="openProfile('${p.id}')" class="mt-4 text-sm gold hover:underline">Add more details so the advice fits your business →</button>`}
+
+    <div class="dropzone mt-4 rounded-2xl border border-dashed border-white/10 p-4" ${dropAttrs('project')}>
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="label">Project files <span class="normal-case tracking-normal font-normal">· your advisors read these in every meeting</span></div>
+        <button type="button" onclick="pickFiles('project')" class="btn-ghost rounded-lg px-3 py-1.5 text-xs shrink-0">+ Add files</button>
+      </div>
+      <div id="projectFiles" class="flex flex-wrap gap-2">${projectFilesHTML(p)}</div>
+    </div>
+  </section>`;
+}
+
+const MODE_TEXT = {
+  debate: { label: 'What do you need advice on?', button: 'Start the meeting', placeholder: 'Ask about a decision, a plan, pricing, hiring, a pivot… You can also paste or drop a file here.' },
+  quick: { label: 'What do you need advice on?', button: 'Start the meeting', placeholder: 'Ask about a decision, a plan, pricing, hiring, a pivot… You can also paste or drop a file here.' },
+  ideas: { label: 'Any direction for the ideas? (optional)', button: 'Start the idea lab 💡', placeholder: 'e.g. "Online businesses I can start with C$5,000", or leave it empty and let them surprise you.' },
+  growth: { label: 'What should they focus on? (optional)', button: 'Get growth ideas 📈', placeholder: 'e.g. "Get more restaurants to sign up", or leave it empty for their best ideas.' },
+};
+const MEETING_TYPES = [['debate', 'Full debate', '1–2 min'], ['quick', 'Quick answer', '~30 s'], ['ideas', '💡 New business ideas', 'each advisor pitches 2 ideas'], ['growth', '📈 Growth ideas', '2 growth tests from each advisor']];
+
+function composer(p) {
+  const mode = MODE_TEXT[p.mode] ? p.mode : 'debate';
+  const text = MODE_TEXT[mode];
+  return `
+  <section class="panel p-5 md:p-6 mb-8 fade-in">
+    <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+      <div class="label">Who joins the meeting</div>
+      <div class="text-xs text-[color:var(--muted)]">Tap to add or remove</div>
+    </div>
+    <div class="flex flex-wrap gap-2 mb-6">
+      ${advisors.map(a => `
+        <button type="button" class="seat panel-2 pl-1.5 pr-3 py-1.5 flex items-center gap-2.5 !rounded-full" data-id="${a.id}" data-on="${p.seats.includes(a.id)}" onclick="toggleSeat('${a.id}')">
+          ${avatar(a.id, 34)}
+          <div class="text-left">
+            <div class="text-[13px] font-medium leading-tight">${esc(a.name)}</div>
+            <div class="text-[11px] text-[color:var(--muted)] leading-tight">${esc(a.role)}</div>
+          </div>
+        </button>`).join('')}
+    </div>
+
+    <div class="label mb-2">Meeting type</div>
+    <div class="seg flex-wrap mb-5" role="group" aria-label="Meeting type">
+      ${MEETING_TYPES.map(([k, label, hint]) => `<button type="button" data-mode="${k}" title="${hint}" aria-pressed="${mode === k}" onclick="setMode('${k}')">${label}</button>`).join('')}
+    </div>
+
+    ${mode === 'ideas' && window.founderFieldsHTML ? founderFieldsHTML(p) : ''}
+
+    <label for="question" class="label block mb-2">${text.label}</label>
+    <div class="dropzone rounded-xl" ${dropAttrs('draft')}>
+      <textarea id="question" rows="${mode === 'ideas' || mode === 'growth' ? 2 : 4}" class="field resize-none text-[15px] leading-relaxed"
+        placeholder="${esc(text.placeholder)}"
+        onpaste="onPasteFiles(event)"
+        onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){convene()}"></textarea>
+    </div>
+    <!-- Extras stay one click away; the box opens by itself when one is in use -->
+    <details class="more-opts mt-3" ${p.web || draftFiles.length ? 'open' : ''}>
+      <summary class="text-[12.5px] text-[color:var(--muted)] hover:text-white cursor-pointer select-none">
+        More options${p.web ? ' · <span class="gold">🌐 web research on</span>' : ''}${draftFiles.length ? ` · <span class="gold">📎 ${draftFiles.length} file${draftFiles.length > 1 ? 's' : ''}</span>` : ''}
+      </summary>
+      <div class="mt-3 space-y-3">
+        <label class="panel-2 p-3.5 flex items-start gap-3 cursor-pointer hover:border-white/15">
+          <input type="checkbox" class="check" ${p.web ? 'checked' : ''} onchange="activeProject().web = this.checked; save()">
+          <span class="flex-1">
+            <span class="block text-sm text-white">🌐 Web research</span>
+            <span class="block text-[12px] text-[color:var(--muted)] mt-0.5">Each advisor searches the internet first for real prices, competitors, market sizes and news, and shows the sources. Adds about C$0.03 per advisor (about C$0.18 for all 6).</span>
+          </span>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="pickFiles('draft')" class="btn-ghost rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Attach file to this question
+          </button>
+          <div id="draftFiles" class="contents">${draftFiles.map(f => fileChip(f, `removeFile('draft','${f.id}')`)).join('')}</div>
+        </div>
+      </div>
+    </details>
+
+    ${mode === 'debate' || mode === 'quick' ? `
+    <div class="flex flex-wrap gap-2 mt-4">
+      ${QUICK_PROMPTS.map(q => `<button type="button" class="chip" onclick="$('#question').value=this.textContent;$('#question').focus()">${esc(q)}</button>`).join('')}
+    </div>` : ''}
+
+    <div class="flex items-center justify-between gap-3 mt-6 flex-wrap">
+      <div class="text-xs text-[color:var(--muted)]">${(n => n === 1 ? 'Your advisors remember your last meeting.' : n ? `Your advisors remember your last ${n} meetings.` : 'Ctrl + Enter to start')(memoryOf(p).length)}</div>
+      <button id="conveneBtn" onclick="convene()" class="btn-gold rounded-xl px-6 py-3 text-sm">${text.button}</button>
+    </div>
+  </section>`;
+}
+
+// ---------- meeting page ----------
+function meetingView(p, m) {
+  return `
+  <section id="meeting" class="fade-in">
+    <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+      <div class="label">${{ debate: 'Full discussion', quick: 'Quick answer', ideas: '💡 Idea lab', growth: '📈 Growth ideas', report: '🗓️ Weekly board report' }[m.mode] || 'Meeting'} ·${new Date(m.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
+      <div class="flex gap-2">
+        <button onclick="copyMeeting()" class="btn-ghost rounded-lg px-3 py-1.5 text-xs">Copy as notes</button>
+        <button onclick="deleteMeeting()" class="btn-ghost rounded-lg px-3 py-1.5 text-xs text-red-300/80">Delete</button>
+      </div>
+    </div>
+    <h2 class="font-serif text-3xl md:text-4xl leading-tight ${m.attachments?.length ? 'mb-3' : 'mb-6'}">“${esc(m.question)}”</h2>
+    ${m.attachments?.length ? `<div class="flex flex-wrap gap-2 mb-6">${m.attachments.map(f => fileChip(f)).join('')}</div>` : ''}
+    <div id="stagePanel" class="rounded-[18px] border border-white/10 ${live.m === m && m.phase !== 'done' ? 'stage-sticky' : ''}">
+      <div id="stage">${stageHTML(m)}</div>
+    </div>
+    <div id="feed">${feedHTML(m)}</div>
+    <div id="synthesis" class="mt-8">${synthesisHTML(m)}</div>
+    <div id="followups" class="mt-8">${followupsHTML(m)}</div>
+  </section>`;
+}
+
+function seatPositions(n) {
+  // Spread seats evenly around the table, starting at the top
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const a = (-90 + (360 / n) * i + (n % 2 ? 0 : 180 / n)) * Math.PI / 180;
+    out.push({ x: 50 + 40 * Math.cos(a), y: 50 + 37 * Math.sin(a) });
+  }
+  return out;
+}
+
+function tally(m) {
+  const vs = Object.values(m.votes || {}).filter(v => v.status === 'done' && v.shown !== false);
+  return { for: vs.filter(v => v.vote === 'for').length, against: vs.filter(v => v.vote === 'against').length, total: vs.length };
+}
+
+// Strip markdown marks but keep underscores inside words (e.g. API_KEY)
+const plainText = s => String(s || '').replace(/[*#>`]/g, '').replace(/(^|\s)_+|_+(?=[\s.,!?]|$)/g, '$1').replace(/\s+/g, ' ').trim();
+const clip = (s, n = 280) => s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s;
+
+// What the caption box shows: who is speaking, a short tag, and their words
+function captionFor(m) {
+  const isLive = live.m === m && m.phase && m.phase !== 'done';
+  if (!isLive) {
+    const d = m.synthesis?.status === 'done' ? m.synthesis.data : null;
+    return d ? { who: 'host', tag: m.mode === 'report' ? 'WEEKLY REPORT' : isIdeaMode(m) ? 'TOP PICK' : 'FINAL ANSWER', text: d.headline } : null;
+  }
+  const [, title] = PHASES[m.phase] || ['', ''];
+  const id = live.speaker;
+  if (!id || id === 'chair') return { who: 'host', tag: title.toUpperCase(), text: '', dots: true };
+  if (live.mode === 'thinking') {
+    const searching = m.web && (m.phase === 'opening' || m.phase === 'pitch');
+    return { who: id, tag: searching ? '🌐 SEARCHING THE WEB' : 'THINKING', text: '', dots: true };
+  }
+  if (m.phase === 'reports') {
+    const r = m.reports?.[id];
+    if (!r || r.status !== 'done') return { who: id, tag: "COULDN'T REPORT", text: r?.error || '' };
+    return { who: id, tag: `${(advisorOf(id).team_role || 'REPORT').toUpperCase()} · GRADE ${r.grade}`, text: clip(plainText(r.update)) };
+  }
+  if (m.phase === 'pitch') {
+    const p = m.pitches?.[id];
+    if (!p || p.status !== 'done') return { who: id, tag: "COULDN'T ANSWER", text: p?.error || '' };
+    return { who: id, tag: m.mode === 'ideas' ? 'PITCHES 2 IDEAS' : 'GROWTH IDEAS', text: clip(p.ideas.map(i => i.title).join(' · ') + ': ' + (p.ideas[0]?.pitch || '')) };
+  }
+  if (m.phase === 'followup') {
+    const a = m.boardQs?.[m.boardQs.length - 1]?.answers?.[id];
+    if (!a || a.status !== 'done') return { who: id, tag: "COULDN'T ANSWER", text: a?.error || '' };
+    return { who: id, tag: 'ANSWERS YOUR QUESTION', text: clip(plainText(a.content)) };
+  }
+  const store = { opening: m.opinions, debate: m.debate, vote: m.votes }[m.phase] || {};
+  const e = store[id];
+  if (!e || e.status !== 'done') return { who: id, tag: "COULDN'T ANSWER", text: e?.error || '' };
+  if (m.phase === 'vote') return { who: id, tag: `VOTES ${String(e.vote).toUpperCase()}`, text: clip(e.reason || '') };
+  if (m.phase === 'debate') {
+    const r = Object.entries(e.reactions || {});
+    const pick = r.find(([, v]) => v === 'disagree') || r.find(([, v]) => v === 'mixed') || r.find(([, v]) => v === 'agree');
+    const tag = !pick ? 'JOINS THE DISCUSSION'
+      : `${pick[1] === 'disagree' ? 'PUSHES BACK ON' : pick[1] === 'mixed' ? 'PARTLY AGREES WITH' : 'AGREES WITH'} ${firstName(pick[0]).toUpperCase()}`;
+    return { who: id, tag, text: clip(plainText(e.content)) };
+  }
+  const verdict = (e.content || '').split(/\*\*What worries me\*\*/i)[0].replace(/\*\*Verdict\*\*/i, '');
+  return { who: id, tag: 'FIRST OPINION', text: clip(plainText(verdict) || plainText(e.content)) };
+}
+
+function captionHTML(m) {
+  const cap = captionFor(m);
+  if (!cap) return '';
+  const isLive = live.m === m && m.phase !== 'done';
+  const host = cap.who === 'host';
+  const color = host ? '#d8b06a' : colorOf(cap.who);
+  const shown = isLive ? cap.text.slice(0, live.typed || 0) : cap.text;
+  return `
+    <div class="caption">
+      <div class="flex items-center gap-2.5 mb-1.5 flex-wrap">
+        ${host ? `<div class="h-7 w-7 rounded-full grid place-items-center" style="background:var(--gold-soft)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d8b06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.5 8.5a2.1 2.1 0 0 1-3-3L11 10M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/></svg></div>` : avatar(cap.who, 28)}
+        <span class="text-[13px] font-semibold" style="color:${color}">${host ? 'Meeting host' : esc(advisorOf(cap.who).name)}</span>
+        <span class="text-[10px] font-bold tracking-[.12em] px-2 py-0.5 rounded" style="background:${color}22;color:${color}">${esc(cap.tag)}</span>
+        ${cap.dots ? `<span class="dots ml-1" style="color:${color}"><i></i><i></i><i></i></span>` : ''}
+      </div>
+      ${cap.text ? `<div class="caption-text text-[13.5px] sm:text-[14.5px] leading-relaxed text-[#e6e9f2]"><span id="captionText">${esc(shown)}</span>${isLive && shown.length < cap.text.length ? '<span class="cursor"></span>' : ''}</div>` : ''}
+    </div>`;
+}
+
+function stageHTML(m) {
+  const isLive = live.m === m && m.phase && m.phase !== 'done';
+  const n = m.seats.length;
+  const viewW = document.getElementById('view')?.clientWidth || 900;
+  const small = viewW < 560;
+  const W = Math.round(Math.max(42, Math.min(128, ((viewW - 32) / n) * 0.8)));
+  const margin = n === 1 ? 50 : Math.max(9, 50 - (n - 1) * 8);
+  const t = tally(m);
+
+  // Busts sit along a curved arc, highest in the middle, like a panel on stage
+  const seats = m.seats.map((id, i) => {
+    const x = n === 1 ? 50 : margin + (i * (100 - 2 * margin)) / (n - 1);
+    const y = 60 - 16 * (1 - ((x - 50) / 50) ** 2);
+    const speaking = isLive && live.speaker === id;
+    const reaction = isLive ? live.reactions[id] : null;
+    const v = m.votes?.[id];
+    const voteTag = v && v.status === 'done' && v.shown !== false
+      ? `<span class="vote-tag mt-1 inline-block" style="${v.vote === 'for' ? 'background:#34d39926;color:#34d399' : v.vote === 'against' ? 'background:#f8717126;color:#f87171' : 'background:#a1a1aa26;color:#a1a1aa'}">${v.vote.toUpperCase()}</span>` : '';
+    return `
+      <div class="bust-seat ${speaking ? live.mode || '' : ''}" style="left:${x}%;top:${y}%;--c:${colorOf(id)}">
+        ${speaking && live.mode === 'thinking' ? `<div class="head-dots" style="color:${colorOf(id)}"><span class="dots"><i></i><i></i><i></i></span></div>` : ''}
+        ${reaction ? `<div class="bubble-pop" style="top:2px;right:-8px">${reaction}</div>` : ''}
+        ${bust(id, { size: W })}
+      </div>
+      <div class="bust-label" style="left:${x}%;top:calc(${y}% + ${Math.round(W * 0.16)}px)">
+        <div class="font-semibold text-white" style="font-size:${small ? 10.5 : 12.5}px">${esc(small ? firstName(id) : advisorOf(id).name)}</div>
+        ${small ? '' : `<div class="text-[10px] mt-0.5" style="color:${colorOf(id)}">${esc(advisorOf(id).role)}</div>`}
+        ${voteTag}
+      </div>`;
+  }).join('');
+
+  let pill;
+  if (isLive) {
+    const [round, title] = PHASES[m.phase] || ['', ''];
+    pill = `<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span><span>LIVE</span><span class="opacity-40">·</span><span>${esc(round)} · ${esc(title)}</span>`;
+  } else if (t.total) {
+    pill = `<span>${t.for > t.against ? 'APPROVED' : t.for === t.against ? 'TIE' : 'NOT APPROVED'}</span><span class="opacity-40">·</span><span style="color:#34d399">${t.for}</span><span>–</span><span style="color:#f87171">${t.against}</span>`;
+  } else if (m.synthesis?.status === 'done' && typeof m.synthesis.data.score === 'number') {
+    pill = `<span>SCORE</span><span style="color:${scoreColor(m.synthesis.data.score)}">${m.synthesis.data.score}/100</span>`;
+  } else {
+    pill = `<span>MEETING FINISHED</span>`;
+  }
+
+  return `
+    <div class="arena ${isLive ? 'live' : ''}">
+      <svg class="arc-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M-2 60 Q50 28 102 60" fill="none" stroke="rgba(160,200,255,.45)" stroke-width="1.6" stroke-dasharray="1 6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div class="top-pill">${pill}</div>
+      ${seats}
+      ${captionHTML(m)}
+    </div>`;
+}
+
+// Links to the web pages an advisor read (from web research)
+function sourcesHTML(sources) {
+  if (!sources?.length) return '';
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+  return `
+    <div class="mt-3 pt-3 border-t border-white/5">
+      <div class="label mb-1.5">🌐 Sources</div>
+      <div class="flex flex-wrap gap-1.5">${sources.map(s => `
+        <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.url)}"
+          class="text-[11.5px] px-2.5 py-1 rounded-full bg-white/[.04] border border-white/10 hover:border-white/30 text-[#c9ccd5] max-w-[260px] truncate">${esc(s.title || host(s.url))}</a>`).join('')}
+      </div>
+    </div>`;
+}
+
+function divider(label, sub) {
+  return `<div class="round-divider"><span class="label gold whitespace-nowrap">${esc(label)}</span>${sub ? `<span class="label whitespace-nowrap normal-case tracking-normal font-normal">${esc(sub)}</span>` : ''}</div>`;
+}
+
+function thinkingMsg(id) {
+  return `
+    <div class="msg new">
+      ${avatar(id, 38)}
+      <div class="bubble" style="--c:${colorOf(id)}">
+        <div class="text-[13px]" style="color:${colorOf(id)}">${esc(advisorOf(id).name)} <span class="text-[color:var(--muted)]">is thinking</span> <span class="dots ml-1" style="color:${colorOf(id)}"><i></i><i></i><i></i></span></div>
+      </div>
+    </div>`;
+}
+
+function msgHTML(m, round, id, entry, bodyHTML, extra = '') {
+  const key = `${m.id}:${round}:${id}`;
+  const long = round === 'opening';
+  const open = expanded.has(key);
+  const isNew = live.m === m && live.speaker === id && live.mode === 'talking';
+  return `
+    <div class="msg ${isNew ? 'new' : ''}" id="msg-${round}-${id}">
+      ${avatar(id, 38)}
+      <div class="bubble" style="--c:${colorOf(id)}">
+        <div class="flex items-baseline gap-2 mb-2 flex-wrap">
+          <span class="text-[14px] font-medium">${esc(advisorOf(id).name)}</span>
+          <span class="text-[11.5px]" style="color:${colorOf(id)}">${esc(advisorOf(id).role)}</span>
+        </div>
+        ${entry.status === 'error'
+          ? `<p class="text-sm text-red-300">${esc(entry.error)}</p>${round === 'opening' && !(live.m === m && m.phase !== 'done') ? `<button onclick="retryOpinion('${id}')" class="btn-ghost rounded-lg px-3 py-1.5 text-xs mt-2">Try again</button>` : ''}`
+          : `<div class="prose-board ${long && !open ? 'clamp' : ''}">${bodyHTML}</div>
+             ${long ? `<button onclick="toggleExpand('${key}')" class="text-xs gold hover:underline mt-2">${open ? 'Show less' : 'Read more'}</button>` : ''}
+             ${extra}`}
+      </div>
+    </div>`;
+}
+
+function feedHTML(m) {
+  const isLive = live.m === m && m.phase && m.phase !== 'done';
+  const out = [];
+  // Advisor ids whose message is visible, plus a "thinking" bubble (HTML) for whoever is up next
+  const roundBlock = (round, store) => m.seats
+    .filter(id => store[id])
+    .map(id => {
+      const e = store[id];
+      if (isLive && live.speaker === id && live.mode === 'thinking' && m.phase === round) return thinkingMsg(id).trim();
+      return shownOk(e) ? id : null;
+    })
+    .filter(Boolean);
+
+  // Weekly report: each head of department on their area
+  const rr = roundBlock('reports', m.reports || {});
+  if (rr.length) {
+    out.push(divider('Team updates · each head reports on their area', 'with a grade and a new task'));
+    rr.forEach(x => out.push(x.startsWith('<') ? x : msgHTML(m, 'reports', x, m.reports[x], md(m.reports[x].update), reportExtraHTML(m.reports[x]))));
+  }
+
+  // Idea lab: each advisor's pitched ideas
+  const rp = roundBlock('pitch', m.pitches || {});
+  if (rp.length) {
+    out.push(divider(m.mode === 'ideas' ? 'The pitches · new business ideas' : 'The pitches · growth ideas', 'each advisor brings 2'));
+    rp.forEach(x => out.push(x.startsWith('<') ? x : msgHTML(m, 'pitch', x, m.pitches[x], ideaCardsHTML(m.pitches[x].ideas, m.mode), sourcesHTML(m.pitches[x].sources))));
+  }
+
+  // Round 1 (in the idea lab, opinions only hold a text copy of the pitches)
+  const r1 = isIdeaMode(m) ? [] : roundBlock('opening', m.opinions);
+  if (r1.length) {
+    out.push(divider(m.mode === 'debate' ? 'Round 1 · First opinions' : 'What each advisor thinks'));
+    r1.forEach(x => out.push(x.startsWith('<') ? x : msgHTML(m, 'opening', x, m.opinions[x], md(m.opinions[x].content), sourcesHTML(m.opinions[x].sources))));
+  }
+
+  // Round 2
+  const r2 = roundBlock('debate', m.debate || {});
+  if (r2.length) {
+    out.push(divider('Round 2 · Discussion', 'they reply to each other'));
+    r2.forEach(x => {
+      if (x.startsWith('<')) return out.push(x);
+      const e = m.debate[x];
+      const reacts = Object.entries(e.reactions || {});
+      const extra = reacts.length ? `<div class="flex flex-wrap gap-1.5 mt-3">${reacts.map(([who, r]) =>
+        `<span class="text-[11px] px-2 py-1 rounded-full bg-white/[.04] border border-white/10">${REACTION_EMOJI[r] || ''} ${REACTION_WORD[r] || ''} <span style="color:${colorOf(who)}">${esc(firstName(who))}</span></span>`).join('')}</div>` : '';
+      out.push(msgHTML(m, 'debate', x, e, md(e.content), extra));
+    });
+  }
+
+  // Motion
+  if (m.motion && (m.motion.status === 'done' || m.motion.status === 'error')) {
+    out.push(divider('The proposal they vote on'));
+    out.push(m.motion.status === 'done'
+      ? `<div class="panel-2 p-5 text-center fade-in" style="border-color:rgba(216,176,106,.3)"><div class="label gold mb-2">Proposal</div><p class="font-serif text-xl md:text-2xl leading-snug">${esc(m.motion.text)}</p></div>`
+      : `<p class="text-sm text-red-300">Couldn't write the proposal: ${esc(m.motion.error)}</p>`);
+  }
+
+  // Round 3
+  const r3 = roundBlock('vote', m.votes || {});
+  if (r3.length) {
+    out.push(divider('Round 3 · The vote'));
+    out.push(`<div class="panel divide-y divide-white/5">${r3.map(x => {
+      if (x.startsWith('<')) return `<div class="p-3">${x}</div>`;
+      const v = m.votes[x];
+      if (v.status === 'error') return `<div class="p-4 flex gap-3 items-center">${avatar(x, 34)}<span class="text-sm text-red-300">${esc(firstName(x))} couldn't vote: ${esc(v.error)}</span></div>`;
+      const col = v.vote === 'for' ? '#34d399' : v.vote === 'against' ? '#f87171' : '#a1a1aa';
+      return `
+        <div class="p-4 flex gap-3 items-start ${live.m === m && live.speaker === x ? 'fade-in' : ''}">
+          ${avatar(x, 34)}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-medium">${esc(advisorOf(x).name)}</span>
+              <span class="vote-tag" style="background:${col}22;color:${col}">${esc(v.vote.toUpperCase())}</span>
+              ${v.changed_mind ? '<span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#fbbf2422;color:#fbbf24">changed their mind</span>' : ''}
+            </div>
+            <p class="text-[13.5px] text-[#c9ccd5] mt-1 leading-relaxed">${esc(v.reason)}</p>
+          </div>
+        </div>`;
+    }).join('')}</div>`);
+  }
+
+  return out.join('');
+}
+
+// ---------- resolution ----------
+function scoreColor(s) { return s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#f87171'; }
+function scoreLabel(s) { return s >= 75 ? 'Strong position' : s >= 50 ? 'Promising, needs fixes' : 'High risk'; }
+
+function ring(score) {
+  const r = 34, c = 2 * Math.PI * r, s = Math.max(0, Math.min(100, score)), col = scoreColor(s);
+  return `
+  <div class="relative w-20 h-20 shrink-0">
+    <svg viewBox="0 0 80 80" class="w-20 h-20 -rotate-90">
+      <circle cx="40" cy="40" r="${r}" stroke="rgba(255,255,255,.07)" stroke-width="6" fill="none"/>
+      <circle cx="40" cy="40" r="${r}" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"
+        stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - s / 100)}" style="transition:stroke-dashoffset 1s ease"/>
+    </svg>
+    <div class="absolute inset-0 grid place-items-center text-center">
+      <div><div class="text-xl font-semibold" style="color:${col}">${s}</div><div class="text-[9px] text-[color:var(--muted)] -mt-0.5">/ 100</div></div>
+    </div>
+  </div>`;
+}
+
+// The final answer's action plan becomes owned tasks on the team's list (static/team.js)
+function addMeetingActions() {
+  const plan = current?.synthesis?.data?.action_plan || [];
+  addPlanTasks(plan.map(a => ({ title: a.task, owner: a.owner || '', due_days: WHEN_DAYS[String(a.when).toLowerCase()] || 7 })), 'meeting');
+}
+
+function synthesisHTML(m) {
+  if (m.mode === 'report') return reportHTML(m);   // static/team.js
+  if (isIdeaMode(m)) return rankingHTML(m);  // static/ideas.js
+  const s = m.synthesis || { status: 'waiting' };
+  const shell = inner => `<div class="panel p-5 md:p-7 relative overflow-hidden" style="border-color:rgba(216,176,106,.3)">
+    <div class="absolute inset-x-0 top-0 h-px" style="background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
+    <div class="flex items-center gap-2 mb-4">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d8b06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.5 8.5a2.1 2.1 0 0 1-3-3L11 10M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/></svg>
+      <span class="label gold">Final answer</span>
+    </div>
+    ${inner}</div>`;
+
+  if (s.status === 'waiting' || s.status === 'pending') {
+    const [, title] = PHASES[m.phase] || ['', 'Waiting for your advisors'];
+    return shell(`
+      <div class="flex items-center gap-5">
+        <div class="w-20 h-20 rounded-full shimmer shrink-0"></div>
+        <div class="flex-1 space-y-3">
+          <div class="text-sm gold">${s.status === 'pending' ? 'Writing the final answer…' : `Now: ${esc(title.toLowerCase())}. The final answer will show here when they are done.`}</div>
+          <div class="h-4 shimmer w-11/12"></div><div class="h-4 shimmer w-8/12"></div>
+        </div>
+      </div>`);
+  }
+  if (s.status === 'error') {
+    return shell(`<p class="text-sm text-red-300 mb-4">${esc(s.error)}</p>
+      <button onclick="rerunResolution()" class="btn-ghost rounded-lg px-3 py-1.5 text-sm">Try again</button>`);
+  }
+
+  const d = s.data;
+  const t = tally(m);
+  const list = (title, items, dot) => items?.length ? `
+    <div class="panel-2 p-4">
+      <div class="label mb-2">${title}</div>
+      <ul class="space-y-2">${items.map(x => `<li class="flex gap-2.5 text-[13.5px] text-[#d4d7de] leading-relaxed"><span class="mt-[9px] h-1.5 w-1.5 rounded-full shrink-0" style="background:${dot}"></span><span>${esc(x)}</span></li>`).join('')}</ul>
+    </div>` : '';
+  const whenColor = w => /today/i.test(w) ? '#f87171' : /week/i.test(w) ? '#fbbf24' : '#8b90a0';
+  const doneCount = d.action_plan.filter((_, i) => m.done[i]).length;
+
+  const voteBar = t.total ? `
+    <div class="mt-6 panel-2 p-4">
+      <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+        <div class="label">The vote</div>
+        <div class="text-xs"><span style="color:#34d399">${t.for} for</span> · <span style="color:#f87171">${t.against} against</span></div>
+      </div>
+      <div class="h-2 rounded-full overflow-hidden flex bg-white/5">
+        <div style="width:${t.for / t.total * 100}%;background:#34d399"></div>
+        <div style="width:${t.against / t.total * 100}%;background:#f87171"></div>
+      </div>
+      ${m.motion?.text ? `<p class="text-[13px] text-[color:var(--muted)] mt-3 italic">${esc(m.motion.text)}</p>` : ''}
+      <div class="flex -space-x-2 mt-3">${m.seats.filter(id => m.votes?.[id]?.status === 'done').map(id => {
+        const col = m.votes[id].vote === 'for' ? '#34d399' : '#f87171';
+        return `<div class="rounded-full" style="box-shadow:0 0 0 2px ${col}" title="${esc(advisorOf(id).name)}: ${esc(m.votes[id].vote)}">${avatar(id, 28)}</div>`;
+      }).join('')}</div>
+    </div>` : '';
+
+  const why = d.why_best?.length ? `
+    <div class="mt-6">
+      <div class="label mb-3">Why this is the best decision</div>
+      <ol class="space-y-2.5">${d.why_best.map((x, i) => `
+        <li class="flex gap-3 text-[14px] text-[#e2e4ea] leading-relaxed">
+          <span class="h-6 w-6 rounded-full grid place-items-center text-[11px] font-semibold shrink-0" style="background:var(--gold-soft);color:var(--gold)">${i + 1}</span>
+          <span>${esc(x)}</span>
+        </li>`).join('')}</ol>
+    </div>` : '';
+
+  return shell(`
+    <div class="flex flex-col sm:flex-row sm:items-center gap-5">
+      ${typeof d.score === 'number' ? ring(d.score) : ''}
+      <div>
+        <div class="label mb-1.5">The decision${typeof d.score === 'number' ? ` · <span style="color:${scoreColor(d.score)}">${scoreLabel(d.score)}</span>` : ''}</div>
+        <p class="font-serif text-2xl md:text-[30px] leading-snug">${esc(d.headline)}</p>
+      </div>
+    </div>
+
+    ${why}
+    ${voteBar}
+
+    ${(d.changed_minds?.length || d.dissent) ? `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+      ${list('Who changed their mind', d.changed_minds, '#fbbf24')}
+      ${d.dissent ? `<div class="panel-2 p-4"><div class="label mb-2">Who still disagrees</div><p class="text-[13.5px] text-[#d4d7de] leading-relaxed">${esc(d.dissent)}</p></div>` : ''}
+    </div>` : ''}
+
+    ${d.action_plan.length ? `
+    <div class="mt-7">
+      <div class="flex items-center justify-between mb-3">
+        <div class="label">Action plan</div>
+        <div class="flex items-center gap-3">
+          <button class="text-xs gold hover:underline" onclick="addMeetingActions()">➕ Add all to my team's tasks</button>
+          <div class="text-xs text-[color:var(--muted)]">${doneCount} / ${d.action_plan.length} done</div>
+        </div>
+      </div>
+      <div class="h-1 rounded-full bg-white/5 mb-4 overflow-hidden"><div class="h-full rounded-full" style="width:${(doneCount / d.action_plan.length) * 100}%;background:var(--gold);transition:width .3s"></div></div>
+      <div class="space-y-2">
+        ${d.action_plan.map((a, i) => `
+          <label class="panel-2 p-3.5 flex gap-3 cursor-pointer hover:border-white/15 ${m.done[i] ? 'opacity-55' : ''}">
+            <input type="checkbox" class="check" ${m.done[i] ? 'checked' : ''} onchange="toggleDone(${i}, this.checked)">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-3">
+                <div class="text-sm text-white ${m.done[i] ? 'line-through' : ''}">${esc(a.task)}</div>
+                ${a.when ? `<span class="text-[10.5px] px-2 py-0.5 rounded-full shrink-0" style="background:${whenColor(a.when)}1f;color:${whenColor(a.when)}">${esc(a.when)}</span>` : ''}
+              </div>
+              ${a.why ? `<div class="text-xs text-[color:var(--muted)] mt-1">${esc(a.why)}</div>` : ''}
+              ${a.owner ? `<div class="flex items-center gap-1.5 mt-2 text-[11px] text-[color:var(--muted)]">${avatar(a.owner, 18)} Owner: ${esc(advisorOf(a.owner).name)} · ${esc(advisorOf(a.owner).team_role || '')}</div>` : ''}
+            </div>
+          </label>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="grid grid-cols-1 md:grid-cols-${m.mode === 'debate' ? 2 : 3} gap-3 mt-5">
+      ${m.mode === 'debate' ? '' : list('Where they agree', d.consensus, '#34d399')}
+      ${list('Where they disagree', d.disagreements, '#fbbf24')}
+      ${list('Biggest risks', d.risks, '#f87171')}
+    </div>
+
+    ${d.next_question ? `
+    <button onclick="askNext()" class="mt-5 w-full text-left panel-2 p-4 flex items-center gap-4 hover:border-[color:var(--gold)]/40 group">
+      <div class="flex-1">
+        <div class="label mb-1">Good question for next time</div>
+        <div class="text-sm text-white">${esc(d.next_question)}</div>
+      </div>
+      <span class="gold text-sm group-hover:translate-x-0.5 transition-transform">Ask now →</span>
+    </button>` : ''}`);
+}
+
+// ---------- follow-ups ----------
+function followupsHTML(m) {
+  const busyMeeting = live.m === m && m.phase && m.phase !== 'done';
+  const spoke = m.seats.filter(id => m.opinions[id]?.status === 'done');
+  if (!spoke.length || (busyMeeting && m.phase !== 'followup')) return '';
+  // Whole-board questions first (static/followup.js); while they answer, only that part shows
+  const board = window.boardFollowupHTML ? boardFollowupHTML(m, busyMeeting) : '';
+  if (busyMeeting) return board;
+  const items = m.seats.flatMap(id => (m.threads[id] || []).map(t => ({ ...t, id }))).sort((a, b) => (a.at || 0) - (b.at || 0));
+  const pending = items.some(t => t.status === 'pending');
+  const sel = m.fuTarget && spoke.includes(m.fuTarget) ? m.fuTarget : spoke[0];
+  return `${board}
+    <div class="label mb-3">Or ask just one advisor</div>
+    <div class="space-y-4 mb-4">${items.map(t => `
+      <div class="flex justify-end"><div class="max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm" style="background:var(--gold-soft);color:#f1e3c6"><span class="opacity-70">To ${esc(firstName(t.id))}:</span> ${esc(t.q)}</div></div>
+      <div class="msg">${avatar(t.id, 34)}<div class="bubble" style="--c:${colorOf(t.id)}">
+        ${t.status === 'pending' ? `<span class="dots" style="color:${colorOf(t.id)}"><i></i><i></i><i></i></span>`
+          : t.status === 'error' ? `<p class="text-sm text-red-300">${esc(t.error)}</p>` : `<div class="prose-board">${md(t.a)}</div>`}
+      </div></div>`).join('')}</div>
+    <div class="panel p-3 flex flex-col sm:flex-row gap-2">
+      <div class="flex gap-1.5 flex-wrap">${spoke.map(id => `
+        <button type="button" onclick="current.fuTarget='${id}';refreshMeeting(current)" title="${esc(advisorOf(id).name)}"
+          class="rounded-full ${id === sel ? '' : 'opacity-40 hover:opacity-80'}" style="${id === sel ? `box-shadow:0 0 0 2px ${colorOf(id)}` : ''}">${avatar(id, 34)}</button>`).join('')}</div>
+      <input id="fuInput" class="field !py-2 !text-[13px] flex-1" placeholder="Ask ${esc(firstName(sel))} a follow-up…" ${pending ? 'disabled' : ''}
+        onkeydown="if(event.key==='Enter'){askFollowUp('${sel}')}">
+      <button onclick="askFollowUp('${sel}')" class="btn-gold rounded-xl px-4 text-sm py-2" ${pending ? 'disabled' : ''}>Ask</button>
+    </div>`;
+}
+
+// ---------- live updates ----------
+function refreshMeeting(m) {
+  if (current !== m) return;
+  const keepInput = $('#fuInput')?.value;
+  const keepBoardQ = $('#boardQInput')?.value;
+  const parts = { stage: stageHTML, feed: feedHTML, synthesis: synthesisHTML, followups: followupsHTML };
+  for (const [id, fn] of Object.entries(parts)) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = fn(m);
+  }
+  if (keepInput && $('#fuInput')) $('#fuInput').value = keepInput;
+  if (keepBoardQ && $('#boardQInput')) $('#boardQInput').value = keepBoardQ;
+  $('#stagePanel')?.classList.toggle('stage-sticky', live.m === m && m.phase !== 'done');
+}
+
+function setLive(m, patch) {
+  if (live.m !== m) live = { m, speaker: null, mode: null, reactions: {}, typed: 0 };
+  // A new speaker (or thinking -> talking) starts a fresh typed caption
+  if (('speaker' in patch && patch.speaker !== live.speaker) || ('mode' in patch && patch.mode !== live.mode)) patch.typed = 0;
+  Object.assign(live, patch);
+  refreshMeeting(m);
+  kickTyper(m);
+}
+
+// Types the speaker's words into the caption box, a few letters at a time
+let typerTimer = null;
+function kickTyper(m) {
+  clearInterval(typerTimer);
+  const cap = captionFor(m);
+  if (!cap?.text || (live.typed || 0) >= cap.text.length) return;
+  typerTimer = setInterval(() => {
+    live.typed = Math.min(cap.text.length, (live.typed || 0) + 2);
+    const el = current === m ? document.getElementById('captionText') : null;
+    if (el) el.textContent = cap.text.slice(0, live.typed);
+    if (live.typed >= cap.text.length) {
+      clearInterval(typerTimer);
+      el?.parentElement.querySelector('.cursor')?.remove();
+    }
+  }, 16);
+}
+
+function followSpeaker(m, round, id) {
+  if (current !== m) return;
+  const el = document.getElementById(`msg-${round}-${id}`) || (round === 'vote' ? document.getElementById('feed').lastElementChild : null);
+  if (!el) return;
+  // Scroll the main column itself; scrollIntoView gets cancelled when the stage re-renders
+  const main = $('#main');
+  const overflow = el.getBoundingClientRect().bottom - main.getBoundingClientRect().bottom + 24;
+  if (overflow <= 0) return;
+  const from = main.scrollTop, target = from + overflow;
+  main.scrollTo({ top: target, behavior: 'smooth' });
+  // Some browsers skip smooth scrolling (e.g. reduced motion); jump there instead
+  setTimeout(() => { if (main.scrollTop === from) main.scrollTop = target; }, 700);
+}
+
+async function fetchInto(entry, path, body) {
+  try {
+    Object.assign(entry, { status: 'done' }, await api(path, body));
+  } catch (e) {
+    Object.assign(entry, { status: 'error', error: e.message });
+  }
+  save();
+}
+
+// All advisors work in parallel, but take the floor one at a time
+async function playRound(m, round, store, ids, makeRequest) {
+  ids.forEach(id => { store[id] = { status: 'pending', shown: false }; });
+  const jobs = ids.map(id => fetchInto(store[id], ...makeRequest(id)));
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    setLive(m, { speaker: id, mode: 'thinking', reactions: {} });
+    await jobs[i];
+    await pace(450);
+    store[id].shown = true;
+    save();
+    const reactions = Object.fromEntries(Object.entries(store[id].reactions || {}).map(([k, r]) => [k, REACTION_EMOJI[r]]));
+    setLive(m, { speaker: id, mode: store[id].status === 'done' ? 'talking' : null, reactions });
+    followSpeaker(m, round, id);
+    // Long enough for the caption to type out and be read
+    const said = captionFor(m)?.text?.length || 0;
+    await pace(store[id].status === 'done' ? Math.min(5200, 1300 + said * 12) : 300);
+  }
+  setLive(m, { speaker: null, mode: null, reactions: {} });
+}
+
+// ---------- actions ----------
+function selectProject(id) {
+  view = 'board';
+  projectTab = 'tasks';
+  state.activeId = id;
+  current = null;
+  save();
+  renderView();
+  toggleSidebar(false);
+}
+
+function openMeeting(id) {
+  view = 'board';
+  current =activeProject().meetings.find(m => m.id === id) || null;
+  if (current) normalizeMeeting(current);
+  renderView();
+  $('#main').scrollTo({ top: 0 });
+  toggleSidebar(false);
+}
+
+function newMeeting() {
+  view = 'board';
+  projectTab = 'ask';
+  if (!activeProject()) return openProfile();
+  current = null;
+  renderView();
+  toggleSidebar(false);
+  $('#main').scrollTo({ top: 0 });
+  setTimeout(() => $('#question')?.focus(), 50);
+}
+
+function setMode(mode) {
+  activeProject().mode = mode;
+  save();
+  // Re-draw the composer for this meeting type, keeping what was typed
+  const typed = $('#question')?.value || '';
+  renderView();
+  if ($('#question')) $('#question').value = typed;
+}
+
+function toggleSeat(id) {
+  const p = activeProject();
+  p.seats = p.seats.includes(id) ? p.seats.filter(s => s !== id) : [...p.seats, id];
+  save();
+  document.querySelectorAll('.seat').forEach(b => { b.dataset.on = p.seats.includes(b.dataset.id); });
+}
+
+function toggleDone(i, checked) {
+  current.done[i] = checked;
+  save();
+  refreshMeeting(current);
+}
+
+function toggleExpand(key) {
+  expanded.has(key) ? expanded.delete(key) : expanded.add(key);
+  refreshMeeting(current);
+}
+
+function askNext() {
+  const q = current.synthesis.data.next_question;
+  newMeeting();
+  setTimeout(() => { $('#question').value = q; $('#question').focus(); }, 60);
+}
+
+async function convene() {
+  const p = activeProject();
+  const chosen = MODE_TEXT[p.mode] ? p.mode : 'debate';
+  let q = $('#question').value.trim();
+  // The idea lab and growth ideas work without a question
+  if (!q && chosen === 'ideas') q = 'What new business should I start?';
+  if (!q && chosen === 'growth') q = 'How can I grow this business faster?';
+  if (!q) { toast('Type your question first.'); $('#question').focus(); return; }
+  const seats = advisors.map(a => a.id).filter(id => p.seats.includes(id));
+  if (!seats.length) { toast('Seat at least one advisor.'); return; }
+  if ([...draftFiles, ...p.files].some(f => f.status === 'reading')) { toast('Wait a moment, files are still being read.'); return; }
+
+  const attachments = draftFiles.map(({ id, name, status, text, chars, truncated, pages }) => ({ id, name, status, text, chars, truncated, pages }));
+  draftFiles = [];
+  const mode = chosen === 'debate' && seats.length < 2 ? 'quick' : chosen;
+  const m = {
+    id: uid(), question: q, createdAt: Date.now(), mode, seats, attachments, web: !!p.web, phase: isIdeaMode({ mode }) ? 'pitch' : 'opening',
+    opinions: {}, debate: {}, votes: {}, pitches: {}, motion: null, threads: {}, synthesis: { status: 'waiting' }, done: {},
+  };
+  seats.forEach(id => { m.threads[id] = []; });
+  p.meetings.unshift(m);
+  current = m;
+  live = { m, speaker: null, mode: null, reactions: {} };
+  save();
+  renderView();
+  $('#main').scrollTo({ top: 0, behavior: 'smooth' });
+
+  await runMeeting(p, m);
+}
+
+async function runMeeting(p, m) {
+  if (isIdeaMode(m)) return runIdeaLab(p, m);  // static/ideas.js
+  const base =() => ({ project: profileOf(p), question: m.question, memory: memoryOf(p, m), documents: docsOf(p, m) });
+
+  // Round 1: opening statements
+  m.phase = 'opening';
+  await playRound(m, 'opening', m.opinions, m.seats, id => ['/api/consult', { ...base(), advisor_id: id, history: [], web: !!m.web }]);
+  const spoke = m.seats.filter(id => m.opinions[id].status === 'done');
+  const openings = Object.fromEntries(spoke.map(id => [id, m.opinions[id].content]));
+
+  if (m.mode === 'debate' && spoke.length > 1) {
+    // Round 2: they respond to each other
+    m.phase = 'debate';
+    setLive(m, {});
+    await pace(700);
+    await playRound(m, 'debate', m.debate, spoke, id => ['/api/debate-turn', { ...base(), advisor_id: id, opinions: openings }]);
+    const debate = Object.fromEntries(spoke.filter(id => m.debate[id].status === 'done').map(id => [id, m.debate[id].content]));
+
+    // The chair drafts one motion
+    m.phase = 'motion';
+    m.motion = { status: 'pending' };
+    setLive(m, { speaker: 'chair', mode: null });
+    try {
+      const r = await api('/api/motion', { ...base(), opinions: openings, debate });
+      m.motion = { status: 'done', text: r.motion };
+    } catch (e) {
+      m.motion = { status: 'error', error: e.message };
+    }
+    save();
+    setLive(m, { speaker: null });
+
+    // Round 3: everyone votes on it
+    if (m.motion.status === 'done') {
+      await pace(1400);
+      m.phase = 'vote';
+      await playRound(m, 'vote', m.votes, spoke, id => ['/api/vote', { ...base(), advisor_id: id, opinions: openings, debate, motion: m.motion.text }]);
+    }
+  }
+
+  m.phase = 'resolution';
+  await runSynthesis(p, m);
+  m.phase = 'done';
+  save();
+  setLive(m, { speaker: null });
+  renderSidebar();
+  if (current === m && m.synthesis.status === 'done') document.getElementById('synthesis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function runSynthesis(p, m) {
+  const opinions = {};
+  m.seats.forEach(id => { if (m.opinions[id]?.status === 'done') opinions[id] = m.opinions[id].content; });
+  if (!Object.keys(opinions).length) {
+    m.synthesis = { status: 'error', error: 'None of the advisors could answer, so there is no final answer yet. Try an advisor again above.' };
+    save(); refreshMeeting(m); return;
+  }
+  const debate = {}, votes = {};
+  m.seats.forEach(id => {
+    if (m.debate?.[id]?.status === 'done') debate[id] = m.debate[id].content;
+    const v = m.votes?.[id];
+    if (v?.status === 'done') votes[id] = { vote: v.vote, reason: v.reason, changed_mind: !!v.changed_mind };
+  });
+  m.synthesis = { status: 'pending' };
+  setLive(m, { speaker: 'chair' });
+  try {
+    const data = await api('/api/synthesize', {
+      project: profileOf(p), question: m.question, opinions, debate, votes,
+      motion: m.motion?.status === 'done' ? m.motion.text : '', memory: memoryOf(p, m), documents: docsOf(p, m),
+    });
+    m.synthesis = { status: 'done', data };
+  } catch (e) {
+    m.synthesis = { status: 'error', error: e.message };
+  }
+  save();
+  setLive(m, { speaker: null });
+  renderSidebar();
+}
+
+async function rerunResolution() {
+  const p = activeProject(), m = current;
+  m.phase = 'resolution';
+  live = { m, speaker: null, mode: null, reactions: {} };
+  await runSynthesis(p, m);
+  m.phase = 'done';
+  save();
+  refreshMeeting(m);
+}
+
+async function retryOpinion(id) {
+  const p = activeProject(), m = current;
+  m.opinions[id] = { status: 'pending' };
+  refreshMeeting(m);
+  await fetchInto(m.opinions[id], '/api/consult', { project: profileOf(p), question: m.question, memory: memoryOf(p, m), documents: docsOf(p, m), advisor_id: id, history: [] });
+  refreshMeeting(m);
+  if (m.synthesis.status !== 'done') await rerunResolution();
+}
+
+async function askFollowUp(id) {
+  const p = activeProject(), m = current;
+  const input = $('#fuInput');
+  const q = input?.value.trim();
+  if (!q) return;
+  const history = [{ role: 'user', content: m.question }, { role: 'assistant', content: m.opinions[id].content }];
+  if (m.debate?.[id]?.status === 'done') history.push({ role: 'user', content: 'What did you say in the discussion?' }, { role: 'assistant', content: m.debate[id].content });
+  m.threads[id].forEach(t => { if (t.status === 'done') history.push({ role: 'user', content: t.q }, { role: 'assistant', content: t.a }); });
+
+  const t = { q, status: 'pending', at: Date.now() };
+  m.threads[id].push(t);
+  input.value = '';
+  refreshMeeting(m);
+  try {
+    const r = await api('/api/consult', { advisor_id: id, project: profileOf(p), question: q, history, memory: memoryOf(p, m), documents: docsOf(p, m) });
+    Object.assign(t, { status: 'done', a: r.content });
+  } catch (e) {
+    Object.assign(t, { status: 'error', error: e.message });
+  }
+  save();
+  refreshMeeting(m);
+  setTimeout(() => $('#fuInput')?.focus(), 30);
+}
+
+function deleteMeeting() {
+  if (live.m === current && current.phase !== 'done') { toast('Wait until the meeting has finished.'); return; }
+  if (!confirm('Delete this meeting?')) return;
+  const p = activeProject();
+  p.meetings = p.meetings.filter(m => m !== current);
+  current = null;
+  save();
+  renderView();
+}
+
+function copyMeeting() {
+  const m = current, d = m.synthesis?.data;
+  if (m.mode === 'report') return copyReport(m);
+  if (isIdeaMode(m)) return copyIdeas(m);
+  let out = `# Meeting: ${m.question}\n${new Date(m.createdAt).toLocaleString()}\n\n`;
+  if (d) {
+    out += `## Final answer${typeof d.score === 'number' ? ` (${d.score}/100)` : ''}\n${d.headline}\n\n`;
+    if (d.why_best?.length) out += `## Why this is the best decision\n${d.why_best.map((x, i) => `${i + 1}. ${x}`).join('\n')}\n\n`;
+    if (d.action_plan.length) out += `## Action plan\n${d.action_plan.map((a, i) => `- [${m.done[i] ? 'x' : ' '}] ${a.task} (${a.when})`).join('\n')}\n\n`;
+    if (d.risks.length) out += `## Risks\n${d.risks.map(r => `- ${r}`).join('\n')}\n\n`;
+  }
+  if (m.motion?.text) {
+    const t = tally(m);
+    out += `## Proposal (${t.for} for, ${t.against} against)\n${m.motion.text}\n\n`;
+    m.seats.forEach(id => { const v = m.votes?.[id]; if (v?.status === 'done') out += `- ${advisorOf(id).name}: ${v.vote.toUpperCase()}. ${v.reason}\n`; });
+    out += '\n';
+  }
+  out += `## First opinions\n\n`;
+  m.seats.forEach(id => { if (m.opinions[id]?.status === 'done') out += `### ${advisorOf(id).name}\n${m.opinions[id].content}\n\n`; });
+  if (Object.keys(m.debate || {}).length) {
+    out += `## Discussion\n\n`;
+    m.seats.forEach(id => { if (m.debate[id]?.status === 'done') out += `**${advisorOf(id).name}:** ${m.debate[id].content}\n\n`; });
+  }
+  navigator.clipboard.writeText(out).then(() => toast('Meeting notes copied'), () => toast('Could not copy'));
+}
+
+// ---------- profile modal ----------
+function openProfile(id) {
+  editingId = id || null;
+  const p = id ? state.projects.find(x => x.id === id) : null;
+  const f = $('#profileForm');
+  f.reset();
+  if (p) Object.keys(profileOf(p)).forEach(k => { if (f.elements[k]) f.elements[k].value = p[k] || ''; });
+  $('#modalTitle').textContent = p ? 'Edit your business details' : 'Tell us about your business';
+  $('#deleteProjectBtn').classList.toggle('hidden', !p);
+  $('#modal').classList.remove('hidden');
+  toggleSidebar(false);
+  setTimeout(() => f.elements.name.focus(), 50);
+}
+
+function closeProfile() { $('#modal').classList.add('hidden'); }
+
+function saveProfile(e) {
+  e.preventDefault();
+  const fields = Object.fromEntries(new FormData(e.target).entries());
+  if (editingId) {
+    Object.assign(state.projects.find(p => p.id === editingId), fields);
+  } else {
+    const p = { id: uid(), ...fields, createdAt: Date.now(), seats: [...DEFAULT_SEATS], mode: 'debate', files: [], meetings: [] };
+    state.projects.unshift(p);
+    state.activeId = p.id;
+    current = null;
+  }
+  save();
+  closeProfile();
+  renderView();
+  if (!editingId) setTimeout(() => $('#question')?.focus(), 50);
+  toast(editingId ? 'Saved. Your advisors will use this from your next question.' : 'Saved. Your advisors know your business now.');
+}
+
+function deleteProject() {
+  const p = state.projects.find(x => x.id === editingId);
+  if (!p || !confirm(`Delete "${p.name}" and all of its meetings?`)) return;
+  state.projects = state.projects.filter(x => x !== p);
+  state.activeId = state.projects[0]?.id || null;
+  current = null;
+  save();
+  closeProfile();
+  renderView();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProfile(); });
+
+// ---------- boot ----------
+// Meetings saved by older versions lack the debate fields
+function normalizeMeeting(m) {
+  m.mode ||= 'quick';
+  m.debate ||= {};
+  m.pitches ||= {};
+  m.reports ||= {};
+  m.votes ||= {};
+  m.attachments ||= [];
+  m.threads ||= {};
+  m.seats.forEach(id => { m.threads[id] ||= []; });
+  m.done ||= {};
+  if (m.synthesis?.status === 'done') {
+    const d = m.synthesis.data;
+    d.why_best ||= []; d.changed_minds ||= []; d.consensus ||= []; d.disagreements ||= []; d.risks ||= []; d.action_plan ||= [];
+  }
+}
+
+async function init() {
+  state.projects.forEach(p => {
+    // Projects saved before file support have no files list; half-read files can't resume
+    p.files = (p.files || []).filter(f => f.status === 'ready');
+    // The advisor line-up changed; seat the new six once
+    if (p.seatsVersion !== 2) { p.seats = [...DEFAULT_SEATS]; p.seatsVersion = 2; }
+    p.meetings.forEach(m => {
+      normalizeMeeting(m);
+      // Anything still running when the page closed will never finish
+      const stores = [m.opinions, m.debate, m.votes, m.pitches, m.reports, ...(m.boardQs || []).map(b => b.answers || {})];
+      (m.boardQs || []).forEach(b => { if (['pending', 'waiting'].includes(b.summary?.status)) b.summary = { status: 'error', error: 'Interrupted before the answer was combined.' }; });
+      stores.forEach(store => Object.values(store).forEach(e => {
+        if (e.status === 'pending') Object.assign(e, { status: 'error', error: 'Interrupted. The page was closed before this finished.' });
+        e.shown = true;
+      }));
+      m.seats.forEach(id => (m.threads[id] || []).forEach(t => { if (t.status === 'pending') Object.assign(t, { status: 'error', error: 'Interrupted.' }); }));
+      if (m.motion?.status === 'pending') m.motion = { status: 'error', error: 'Interrupted.' };
+      if (['pending', 'waiting'].includes(m.synthesis?.status)) m.synthesis = { status: 'error', error: 'Stopped before the final answer was written.' };
+      m.phase = 'done';
+    });
+  });
+  if (!activeProject()) state.activeId = state.projects[0]?.id || null;
+
+  try {
+    const [status, list] = await Promise.all([api('/api/status'), api('/api/advisors')]);
+    advisors = list;
+    $('#statusPill').innerHTML = status.demo
+      ? `<span class="h-2 w-2 rounded-full bg-amber-400"></span><span><span class="text-amber-300">Demo mode</span> · set OPENROUTER_API_KEY for real advice</span>`
+      : `<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span><span>Connected · ${esc(status.model)}</span>`;
+  } catch (e) {
+    $('#statusPill').innerHTML = `<span class="h-2 w-2 rounded-full bg-red-400"></span><span class="text-red-300">Server unreachable</span>`;
+  }
+  renderView();
+}
+window.addEventListener('resize', () => { if (current) { const el = document.getElementById('stage'); if (el) el.innerHTML = stageHTML(current); } });
+init();
+</script>
+<script src="/static/mentor.js"></script>
+<script src="/static/ideas.js"></script>
+<script src="/static/team.js"></script>
+<script src="/static/today.js"></script>
+<script src="/static/followup.js"></script>
+</body>
+</html>
